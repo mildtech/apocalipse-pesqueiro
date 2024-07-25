@@ -1,9 +1,10 @@
 
  "use client"
 
-import { useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Jogador from './components/Jogador';
 import Tabela from './components/Tabela';
+import { insertCoin, onPlayerJoin, usePlayersList } from 'playroomkit';
 
 export default function Home() {
   const [count, setCount] = useState(0);
@@ -13,26 +14,26 @@ export default function Home() {
     idade: 10
   });
 
-  const [jogadores, setJogadores] = useState([{
-    id: 1,
-    nome: 'Rodrigo', 
-    idade: 40
-  },
-  {
-    id: 2,
-    nome: 'João', 
-    idade: 20
-  },
-  {
-    id: 3,
-    nome: 'Pedro', 
-    idade: 30
-  },
-  {
-    id: 4,
-    nome: 'Marcelo', 
-    idade: 35
-  }]);
+  const jogadores = usePlayersList();
+
+  useEffect(() => {
+    async function setGame() {
+        await insertCoin();  
+
+        onPlayerJoin(playerState => {
+          // PlayerState is this player's multiplayer state along with it's profile.
+          // Probably add a player sprite to the game here.
+          console.log(playerState.getProfile().name + ' joined the game'); 
+          playerState.onQuit(() => {
+            // Handle player quitting. Maybe remove player sprite?
+            console.log(playerState.getProfile().name + ' left the game'); 
+          });
+        });
+    }
+    
+    setGame();
+
+  },[]);
 
 
   function handleIncrementaClick() {
@@ -81,7 +82,7 @@ export default function Home() {
         <br>
         </br>
         {jogadores.map(jogador => {
-          return <Jogador key={jogador.id} nome={jogador.nome} idade={jogador.idade}/>
+          return <Jogador key={jogador.id} nome={jogador.getProfile().name} idade={0}/>
         })}   
     </main>
   );
