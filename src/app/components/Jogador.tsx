@@ -2,13 +2,16 @@ import React from 'react'
 
 type JogadorProps = {
     nome: string;
-    idade?: number;
+    quantidadeTotalPescada?: number;
 }
 export default function Jogador(jogadorProps: JogadorProps) {
 
     return (
         <div>
-            <h1>Jogador {jogadorProps.nome} - idade : {jogadorProps.idade}</h1>
+            <h1>Jogador {jogadorProps.nome}</h1>
+            {jogadorProps.quantidadeTotalPescada != null ? 
+                <h2>Quantidade Pescada {jogadorProps.quantidadeTotalPescada}</h2>
+            : null} 
         </div>
     )
 }
