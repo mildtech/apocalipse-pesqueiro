@@ -1,7 +1,7 @@
 
  "use client"
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import Jogador from './components/Jogador';
 import Tabela from './components/Tabela';
 import { insertCoin, onPlayerJoin, useMultiplayerState, usePlayersList } from 'playroomkit';
@@ -37,12 +37,8 @@ const initialState: GameState = {
 
 
 export default function Home() {
-  const [count, setCount] = useState(0);
   
-  const [jogador, setJogador] = useState<Jogador>({
-    nome: 'Rodrigo', 
-    quantidadeTotalPescada: 0
-  });
+  const quantidadePescada = useRef<HTMLInputElement>(null);
 
   const [gameState, setGameState] = useMultiplayerState('gameState', initialState);
 
@@ -60,6 +56,7 @@ export default function Home() {
           console.log('novaQuantgameState.quantidadePeixesLago: ', gameState.quantidadePeixesLago);
           const novaQuantidadePeixes = gameState.quantidadePeixesLago + gameState.quantidadeInicialPeixesJogador;
           console.log('novaQuantidadePeixes: ', novaQuantidadePeixes);
+          
           gameState.quantidadePeixesLago = novaQuantidadePeixes;
           setGameState(gameState, true);
 
@@ -73,42 +70,14 @@ export default function Home() {
     setGame();
 
   },[]);
-
-
-  function handleIncrementaClick() {
-    //setCount(10);
-    
-    setCount(countAtual => 
-      countAtual + 1
-    );
-
-    setCount(countAtual => 
-      countAtual + 1
-    );
-
-    setJogador({nome: 'Pedro', idade: 20});
-    trocaNomeJogador('João');
-  }
-
   
-  function trocaNomeJogador(novoNome: string) {
-    
-    setJogador(jogadorAtual => {
-      return {...jogadorAtual, nome: novoNome}
-    });
+  function handleJogadorClick(nome: string) {
+    console.log('Jogador a ser fiscalizado: ' + nome);
   }
 
-  /*function soma(num1:number, num2: number) { 
-    return num1 + num2;
+  function handlePescar() {
+    console.log('Pescar - quantidadePescada: ', quantidadePescada.current?.value);
   }
-
-  const calculoTrimestral = 0
-  const calculoProximoMes = 1
-  const valor3 = 50;
-
-  const restultado = soma(calculoTrimestral, calculoProximoMes);*/
-
-  
 
   return (  
     <main>
@@ -127,15 +96,16 @@ export default function Home() {
             Custo fiscalização: {gameState.custoFiscalizacao}
           </div>
         </div>
-        <div id="meuJogador">
-           <Jogador nome={jogador.nome} quantidadeTotalPescada={jogador.quantidadeTotalPescada}/>
-        </div>
+        <label htmlFor="quantidadePescada">Quantidade de peixes pescados: </label>
+        <input type="number" ref={quantidadePescada} id="quantidadePescada" name="quantidadePescada" min="0" max="100" />
         
         <div id="demaisJogadores">
           {jogadores.map(jogador => {
-            return <Jogador key={jogador.id} nome={jogador.getProfile().name}/>
+            return <Jogador key={jogador.id} nome={jogador.getProfile().name} onClick={handleJogadorClick}/>
           })}   
         </div>
+
+        <button onClick={handlePescar} > Pescar </button>
     </main>
   );
 }
