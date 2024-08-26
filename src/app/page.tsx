@@ -4,7 +4,7 @@
 import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Jogador from './components/Jogador';
 import Tabela from './components/Tabela';
-import { insertCoin, myPlayer, onPlayerJoin, useMultiplayerState, usePlayersList } from 'playroomkit';
+import { insertCoin, myPlayer, onPlayerJoin, useMultiplayerState, usePlayersList, PlayerState } from 'playroomkit';
 import { get } from 'http';
 
 type Rodada = {
@@ -55,7 +55,7 @@ export default function Home() {
     async function setGame() {
         await insertCoin({matchmaking: true});  
 
-        onPlayerJoin(playerState => {
+        onPlayerJoin((playerState:PlayerState) => {
           // PlayerState is this player's multiplayer state along with it's profile.
           // Probably add a player sprite to the game here.
           console.log(playerState.getProfile().name + ' joined the game'); 
