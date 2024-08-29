@@ -4,7 +4,7 @@
 import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Jogador from './components/Jogador';
 import Tabela from './components/Tabela';
-import { insertCoin, myPlayer, onPlayerJoin, useMultiplayerState, usePlayersList, PlayerState } from 'playroomkit';
+import { insertCoin, RPC, myPlayer, onPlayerJoin, useMultiplayerState, usePlayersList, PlayerState } from 'playroomkit';
 import { get } from 'http';
 
 type Rodada = {
@@ -25,6 +25,7 @@ type GameState = {
   custoFiscalizacao: number;
   quantidadeInicialPeixesJogador: number;
   quantidadePeixesLago: number;
+  quantidadeBanca: number;
   rodadas: Rodada[];
 }
 
@@ -35,6 +36,7 @@ const initialState: GameState = {
   custoFiscalizacao: 2,
   quantidadeInicialPeixesJogador: 100,
   quantidadePeixesLago: 0,
+  quantidadeBanca: 0,
   rodadas: []
 }
 
@@ -44,6 +46,7 @@ const PEIXES_CESTO = 'peixesCesto';
 export default function Home() {
   
   const quantidadePescadaRef = useRef<HTMLInputElement>(null);
+  const [jogadorAFiscalizar, setJogadorAFiscalizar] = useState<string | null>(null);
 
   const [gameState, setGameState] = useMultiplayerState('gameState', initialState);
   const [peixesCesto, setPeixesCesto] = useState<number>(0);
@@ -79,7 +82,18 @@ export default function Home() {
   },[]);
   
   function handleJogadorClick(nome: string) {
-    console.log('Jogador a ser fiscalizado: ' + nome);
+    console.log('jogadorAFiscalizar !== nome ' + jogadorAFiscalizar !== nome);
+    console.log('jogadorAFiscalizar ' + jogadorAFiscalizar);
+    console.log('nome ' + nome);
+    
+
+    if (jogadorAFiscalizar !== nome) {
+     setJogadorAFiscalizar(nome);
+     console.log('Jogador a ser fiscalizado: ' + nome);
+    } else {
+      setJogadorAFiscalizar(null);
+      console.log('nao fiscalizar');
+    }
   }
 
   function handlePescar() {
@@ -90,9 +104,25 @@ export default function Home() {
       return;
     }
     const totalPescadoRodada = peixesCesto + quantidadePescada;
-    setPeixesCesto(totalPescadoRodada);
-    myPlayer()?.setState(PEIXES_CESTO, totalPescadoRodada, true);
+    
+    //setPeixesCesto(totalPescadoRodada);
+    //myPlayer()?.setState(PEIXES_CESTO, totalPescadoRodada, true);
+
+    // Trigger the RPC on the host only
+    RPC.call('jogadaRealizada', {quantidadePescada: quantidadePescada, jogadorAFiscalizar: jogadorAFiscalizar}, RPC.Mode.HOST);
   }
+
+  RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
+    console.log(`Player ${caller.getProfile().name} pescou ${data.quantidadePescada} peixes!`);
+    //players[data.victimId].setState("dead", true);
+  });
+  
+
+  ///fiscalizar   
+  // só pode fiscalizar se nao tiver roubado
+  //reduz custo fiscalizacao
+  //e caso tenha "roubado" soma a "banca" com sendo um jogador a mais aos que ficalizaram o jogador e divide os peixes  
+
 
   const getTotalPeixesLago = useCallback(() => {
     let totalPeixesPescados = 0;
@@ -122,6 +152,9 @@ export default function Home() {
             Limite Sustentável: {gameState.limiteSustentavel}
           </div>
           <div>
+            Limite máximo Possível: {gameState.limitePossivelRodada}
+          </div>
+          <div>
             Custo fiscalização: {gameState.custoFiscalizacao}
           </div>
         </div>
@@ -130,7 +163,7 @@ export default function Home() {
         
         <div id="demaisJogadores">
           {jogadores.map(jogador => {
-            return <Jogador key={jogador.id} nome={jogador.getProfile().name} onClick={handleJogadorClick}/>
+            return <Jogador key={jogador.id} nome={jogador.getProfile().name} selected={jogador.getProfile().name===jogadorAFiscalizar} onClick={handleJogadorClick}/>
           })}   
         </div>
         {error ? <div className='absolute inset-0 bg-red-500' onClick={()=>setError(null)}>{error}</div> : null}
