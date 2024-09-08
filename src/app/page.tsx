@@ -4,7 +4,7 @@
 import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Jogador from './components/Jogador';
 import Tabela from './components/Tabela';
-import { insertCoin, RPC, myPlayer, onPlayerJoin, useMultiplayerState, usePlayersList, PlayerState } from 'playroomkit';
+import { insertCoin, RPC, myPlayer, onPlayerJoin, useMultiplayerState, usePlayersList, PlayerState, usePlayersState, isHost } from 'playroomkit';
 import { get } from 'http';
 
 type Rodada = {
@@ -41,6 +41,7 @@ const initialState: GameState = {
 }
 
 const PEIXES_CESTO = 'peixesCesto';
+const JOGADA_PENDENTE = 'JOGADA_PENDENTE';
 
 
 export default function Home() {
@@ -53,10 +54,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const jogadores = usePlayersList(true);
+  const jogadasPendentes = usePlayersState(JOGADA_PENDENTE); 
 
   useEffect(() => {
     async function setGame() {
-        await insertCoin({matchmaking: true});  
+        await insertCoin({matchmaking: true, skipLobby: true});  
 
         onPlayerJoin((playerState:PlayerState) => {
           // PlayerState is this player's multiplayer state along with it's profile.
@@ -80,6 +82,41 @@ export default function Home() {
     setGame();
 
   },[]);
+
+  useEffect(() => {
+    RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
+      console.log(`Player ${caller.getProfile().name} pescou ${data.quantidadePescada} peixes!`);
+      caller.setState(JOGADA_PENDENTE, data, true);
+    });
+
+  },[]);
+
+  useEffect(() => {
+    if (isHost()){
+      const jogadasNaoRealizadas = jogadasPendentes.filter((jogada) => jogada.state == null);
+      if (jogadasNaoRealizadas.length == 0){
+        console.log('todas jogadas realizadas');
+        const somaPeixesPescados = jogadasPendentes.reduce((acumulador, jogada) => acumulador + jogada.state.quantidadePescada, 0);
+        
+        const limitePeixesPossiveis = (somaPeixesPescados > gameState.quantidadePeixesLago) ? 
+                                        Math.floor(gameState.quantidadePeixesLago / jogadores.length) : 
+                                        gameState.quantidadePeixesLago;
+        
+        let somaPeixesPescadosRealizada = 0;
+        jogadasPendentes.forEach((jogada) => {
+          const peixesCesto = jogada.player.getState(PEIXES_CESTO);
+          const peixesPescadosJogador = (jogada.state.quantidadePescada > limitePeixesPossiveis) ? limitePeixesPossiveis : jogada.state.quantidadePescada;
+          jogada.player.setState(PEIXES_CESTO, peixesCesto + peixesPescadosJogador, true);
+          somaPeixesPescadosRealizada += peixesPescadosJogador;
+          
+        });                              
+        
+        //gameState.quantidadePeixesLago -= somaPeixesPescadosRealizada;
+        //setGameState(setGameState, true);
+      }
+    }
+
+  },[jogadasPendentes, jogadores, gameState.quantidadePeixesLago]);
   
   function handleJogadorClick(nome: string) {
     console.log('jogadorAFiscalizar !== nome ' + jogadorAFiscalizar !== nome);
@@ -112,10 +149,6 @@ export default function Home() {
     RPC.call('jogadaRealizada', {quantidadePescada: quantidadePescada, jogadorAFiscalizar: jogadorAFiscalizar}, RPC.Mode.HOST);
   }
 
-  RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
-    console.log(`Player ${caller.getProfile().name} pescou ${data.quantidadePescada} peixes!`);
-    //players[data.victimId].setState("dead", true);
-  });
   
 
   ///fiscalizar   
