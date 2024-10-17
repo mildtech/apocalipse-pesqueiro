@@ -1,16 +1,17 @@
 import React, { useState } from 'react'
 
 type JogadorProps = {
+    id: string;
     nome: string;
     quantidadeTotalPescada?: number;
     selected?: boolean;
-    onClick?: (nome: string) => void;
+    onClick?: (id: string) => void;
 }
 export default function Jogador(jogadorProps: JogadorProps) {
 
     const handleJogadorClick = () => {
         if (jogadorProps.onClick) {
-            jogadorProps.onClick(jogadorProps.nome);
+            jogadorProps.onClick(jogadorProps.id);
         }
     }
 
