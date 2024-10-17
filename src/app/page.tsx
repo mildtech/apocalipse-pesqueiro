@@ -91,19 +91,22 @@ export default function Home() {
   },[]);
 
   useEffect(() => {
+    //processamento das jogadas pendentes quando todas jogadas foram realizadas
     if (isHost()){
       const jogadasNaoRealizadas = jogadasPendentes.filter((jogada) => jogada.state == null);
       if (jogadasNaoRealizadas.length == 0){
         console.log('todas jogadas realizadas');
         const somaPeixesPescados = jogadasPendentes.reduce((acumulador, jogada) => acumulador + jogada.state.quantidadePescada, 0);
         
-        const jogadoresFiscalizados = jogadasPendentes.reduce((acc: Record<string, number>, jogada) => {
+        const jogadoresFiscalizados = jogadasPendentes.reduce((acc: Record<string, PlayerState[]>, jogada) => {
           const jogadorAFiscalizar = jogada.state.jogadorAFiscalizar;
-          acc[jogadorAFiscalizar] = (acc[jogadorAFiscalizar] || 0) + 1;
+         
+          acc[jogadorAFiscalizar] = acc[jogadorAFiscalizar] || [];
+          acc[jogadorAFiscalizar].push(jogada.player);
+          
           return acc;
-        }, {} as Record<string, number>);
-        
-        
+        }, {} as Record<string, PlayerState[]>);
+       
         console.log(jogadoresFiscalizados)
         const limitePeixesPossiveis = (somaPeixesPescados > gameState.quantidadePeixesLago) ? 
                                         Math.floor(gameState.quantidadePeixesLago / jogadores.length) : 
@@ -111,16 +114,38 @@ export default function Home() {
         
         let somaPeixesPescadosRealizada = 0;
         jogadasPendentes.forEach((jogada) => {
+          //recuper peixes no cesto do jogador
           const peixesCesto = jogada.player.getState(PEIXES_CESTO);
-          const peixesPescadosJogador = (jogada.state.quantidadePescada > limitePeixesPossiveis) ? limitePeixesPossiveis : jogada.state.quantidadePescada;
-          if (peixesPescadosJogador > gameState.limiteSustentavel && jogadoresFiscalizados[jogada.player.id] > 0){
+
+          //verifica se jogador pesca mais que o limite possivel ou quantidade existente no lago
+          let peixesPescadosJogador = (jogada.state.quantidadePescada > limitePeixesPossiveis) ? limitePeixesPossiveis : jogada.state.quantidadePescada;
+
+          //verifica se jogador fiscalizou alguem e desconta o custo da fiscalizacao
+          peixesPescadosJogador -= jogada.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
+
+          //verifica se jogador roubou e está sendo fiscalizado
+          if (peixesPescadosJogador > gameState.limiteSustentavel && jogadoresFiscalizados[jogada.player.id]?.length > 0){
             console.log('Jogador ' + jogada.player.getProfile().name + ' foi fiscalizado');
             const multa = 0.1 * peixesPescadosJogador;
-            const rateio = 0.9 * peixesPescadosJogador / jogadoresFiscalizados[jogada.player.id];
+            const rateio = 0.9 * peixesPescadosJogador / jogadoresFiscalizados[jogada.player.id].length;
+
             jogada.player.setState(FOI_FISCALIZADO, true);
 
+            //rateia peixes entre os jogadores que fiscalizaram
+            jogadoresFiscalizados[jogada.player.id].forEach((fiscalizador) => {
+              fiscalizador.setState(PEIXES_CESTO, fiscalizador.getState(PEIXES_CESTO) + rateio, true);
+            });
+
+            //incrementa a banca com a multa
+            gameState.quantidadeBanca += multa;
+          }else{
+            
+            //caso nao tenha sido fiscalizado atribui peixes ao jogador
+            jogada.player.setState(PEIXES_CESTO, peixesCesto + peixesPescadosJogador, true);
+            
+            //incrementa a banca com o custo da fiscalizacao
+            gameState.quantidadeBanca += jogada.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
           }
-          jogada.player.setState(PEIXES_CESTO, peixesCesto + peixesPescadosJogador, true);
           jogada.player.setState(JOGADA_PENDENTE, null, true);
           somaPeixesPescadosRealizada += peixesPescadosJogador; 
         });                              
@@ -176,7 +201,7 @@ export default function Home() {
       const peixesCesto = jogador.getState(PEIXES_CESTO);
       totalPeixesPescados += peixesCesto;
     });
-    const totalPeixesLago = (jogadores.length * gameState.quantidadeInicialPeixesJogador) - totalPeixesPescados;
+    const totalPeixesLago = (jogadores.length * gameState.quantidadeInicialPeixesJogador) - totalPeixesPescados - gameState.quantidadeBanca;
     gameState.quantidadePeixesLago = totalPeixesLago;
     
     return totalPeixesLago;
@@ -188,10 +213,13 @@ export default function Home() {
         <div id="cabecalho">
           Apolicapse Pesqueiro: 
         </div>
-        <Jogador key={myPlayer()?.id} id={myPlayer()?.id} nome={myPlayer()?.getProfile().name} quantidadeTotalPescada={peixesCesto}/>
+        <Jogador key={myPlayer()?.id} id={myPlayer()?.id} nome={myPlayer()?.getProfile().name} quantidadeTotalPescada={myPlayer()?.getState(PEIXES_CESTO)}/>
         <div id="configJogo">
           <div>
             Total de Peixes no lago: {getTotalPeixesLago()}
+          </div>
+          <div>
+            Quantidade da banca: {gameState.quantidadeBanca}
           </div>
           <div>
             Limite Sustentável: {gameState.limiteSustentavel}
