@@ -11,6 +11,20 @@ type Rodada = {
   quantidadePescada: number;
 }
 
+type Jogada = {
+  idJogador: string;
+  //intencao da jogada
+  quantidadePescada: number;
+  jogadorAFiscalizar: string | null;
+  //resultado da jogada
+  quantidadeAcumulada: number;
+  fiscalizadoPor: PlayerState[];
+  roubou: boolean;
+  multa: number;
+  rateio: number;
+  
+}
+
 type Jogador = {
   nome: string;
   quantidadeTotalPescada: number;
@@ -40,7 +54,7 @@ const initialState: GameState = {
 
 const PEIXES_CESTO = 'PEIXES_CESTO';
 const JOGADA_PENDENTE = 'JOGADA_PENDENTE';
-const FOI_FISCALIZADO = 'FOI_FISCALIZADO';
+const RESULTADO_JOGADA = 'RESULTADO_JOGADA';
 
 
 export default function Home() {
@@ -96,6 +110,8 @@ export default function Home() {
       const jogadasNaoRealizadas = jogadasPendentes.filter((jogada) => jogada.state == null);
       if (jogadasNaoRealizadas.length == 0){
         console.log('todas jogadas realizadas');
+        const rodadaAtual : Jogada[] = [];
+
         const somaPeixesPescados = jogadasPendentes.reduce((acumulador, jogada) => acumulador + jogada.state.quantidadePescada, 0);
         
         const jogadoresFiscalizados = jogadasPendentes.reduce((acc: Record<string, PlayerState[]>, jogada) => {
@@ -113,42 +129,86 @@ export default function Home() {
                                         gameState.quantidadePeixesLago;
         
         let somaPeixesPescadosRealizada = 0;
-        jogadasPendentes.forEach((jogada) => {
+        jogadasPendentes.forEach((jogadaPendente) => {
+          
+          const jogada: Jogada = {
+            idJogador: jogadaPendente.player.id,
+            quantidadePescada: jogadaPendente.state.quantidadePescada,
+            jogadorAFiscalizar: jogadaPendente.state.jogadorAFiscalizar,
+            quantidadeAcumulada: 0,
+            fiscalizadoPor: [],
+            roubou: false,
+            multa: 0,
+            rateio: 0
+          }
+
           //recuper peixes no cesto do jogador
-          const peixesCesto = jogada.player.getState(PEIXES_CESTO);
+          const peixesCesto = jogadaPendente.player.getState(PEIXES_CESTO);
 
           //verifica se jogador pesca mais que o limite possivel ou quantidade existente no lago
-          let peixesPescadosJogador = (jogada.state.quantidadePescada > limitePeixesPossiveis) ? limitePeixesPossiveis : jogada.state.quantidadePescada;
+          let peixesPescadosJogador = (jogadaPendente.state.quantidadePescada > limitePeixesPossiveis) ? limitePeixesPossiveis : jogadaPendente.state.quantidadePescada;
 
           //verifica se jogador fiscalizou alguem e desconta o custo da fiscalizacao
-          peixesPescadosJogador -= jogada.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
+          peixesPescadosJogador -= jogadaPendente.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
 
           //verifica se jogador roubou e está sendo fiscalizado
-          if (peixesPescadosJogador > gameState.limiteSustentavel && jogadoresFiscalizados[jogada.player.id]?.length > 0){
-            console.log('Jogador ' + jogada.player.getProfile().name + ' foi fiscalizado');
-            const multa = 0.1 * peixesPescadosJogador;
-            const rateio = 0.9 * peixesPescadosJogador / jogadoresFiscalizados[jogada.player.id].length;
+          jogada.roubou = peixesPescadosJogador > gameState.limiteSustentavel;
+          jogada.fiscalizadoPor = jogadoresFiscalizados[jogadaPendente.player.id];
+          
+          if (jogada.roubou && jogada.fiscalizadoPor?.length > 0){
+            console.log('Jogador ' + jogadaPendente.player.getProfile().name + ' foi fiscalizado');
+            jogada.multa = 0.1 * peixesPescadosJogador;
+            jogada.rateio = 0.9 * peixesPescadosJogador / jogadoresFiscalizados[jogadaPendente.player.id].length;
 
-            jogada.player.setState(FOI_FISCALIZADO, true);
+            let resultadoJogadaJogador = jogadaPendente.player.getState(RESULTADO_JOGADA) || {};
+            
+            resultadoJogadaJogador.mensagem = 'Você foi fiscalizado por: ' + jogadoresFiscalizados[jogadaPendente.player.id].toString() + ' e perdeu os peixes dessa rodada!';
+            resultadoJogadaJogador.fiscalizadores = jogadoresFiscalizados[jogadaPendente.player.id];
+
+            jogadaPendente.player.setState(RESULTADO_JOGADA, resultadoJogadaJogador, true);
 
             //rateia peixes entre os jogadores que fiscalizaram
-            jogadoresFiscalizados[jogada.player.id].forEach((fiscalizador) => {
-              fiscalizador.setState(PEIXES_CESTO, fiscalizador.getState(PEIXES_CESTO) + rateio, true);
+            jogadoresFiscalizados[jogadaPendente.player.id].forEach((fiscalizador) => {
+              fiscalizador.setState(PEIXES_CESTO, fiscalizador.getState(PEIXES_CESTO) + jogada.rateio, true);
+              //Verifica se fiscalizador ja possui um resultado de jogada
+              let resultadoJogadaFiscalizador = fiscalizador.getState(RESULTADO_JOGADA) || {};
+              resultadoJogadaFiscalizador.rateio = jogada.rateio;
+              fiscalizador.setState(RESULTADO_JOGADA, resultadoJogadaFiscalizador, true);
             });
 
             //incrementa a banca com a multa
-            gameState.quantidadeBanca += multa;
-          }else{
+            gameState.quantidadeBanca += jogada.multa;
+          } else { 
             
             //caso nao tenha sido fiscalizado atribui peixes ao jogador
-            jogada.player.setState(PEIXES_CESTO, peixesCesto + peixesPescadosJogador, true);
+            jogada.quantidadeAcumulada = peixesCesto + peixesPescadosJogador;
+            jogadaPendente.player.setState(PEIXES_CESTO, jogada.quantidadeAcumulada , true);
+            
+            let resultadoJogadaJogador = jogadaPendente.player.getState(RESULTADO_JOGADA) || {};
+            
+            resultadoJogadaJogador.mensagem = 'Você acumulou ' + peixesPescadosJogador + ' peixes nessa rodada!';
+            resultadoJogadaJogador.fiscalizadores = jogadoresFiscalizados[jogadaPendente.player.id];
+
+            jogadaPendente.player.setState(RESULTADO_JOGADA, resultadoJogadaJogador, true);
+
+            //1 - nao roubou e fiscalizou e nao achou nada
+            //2 - nao roubou e fiscalizou e achou algo
+            //3 - nao roubou e nao foi fiscalizou - v
+            //4 - roubou e foi fiscalizado -- v
+            //5 - roubou e nao foi fiscalizado - v
             
             //incrementa a banca com o custo da fiscalizacao
-            gameState.quantidadeBanca += jogada.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
+            gameState.quantidadeBanca += jogadaPendente.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
           }
-          jogada.player.setState(JOGADA_PENDENTE, null, true);
+          jogadaPendente.player.setState(JOGADA_PENDENTE, null, true);
           somaPeixesPescadosRealizada += peixesPescadosJogador; 
-        });                              
+          //inclui a jogada na rodada atual
+          rodadaAtual.push(jogada);
+        }); 
+        
+        //atualiza o game state com a rodada atual
+        gameState.rodadas.push(rodadaAtual);
+        setGameState(gameState, true);
   
       }
     }
@@ -203,9 +263,9 @@ export default function Home() {
     });
     const totalPeixesLago = (jogadores.length * gameState.quantidadeInicialPeixesJogador) - totalPeixesPescados - gameState.quantidadeBanca;
     gameState.quantidadePeixesLago = totalPeixesLago;
-    
     return totalPeixesLago;
   },[gameState, jogadores]);
+
 
   return (  
     <main>
