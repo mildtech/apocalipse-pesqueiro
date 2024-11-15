@@ -10,6 +10,7 @@ import { Jogada } from './types/Jogada';
 import { GameState } from './types/GameState';
 import Cabecalho from './components/Cabecalho';
 import ResultadosJogadas from './components/ResultadosJogadas';
+import ResultadoFinal from './components/ResultadoFinal';
 
 
 type Jogador = {
@@ -22,11 +23,14 @@ type Jogador = {
 const initialState: GameState = {
   limiteSustentavel: 11,
   limitePossivelRodada: 20,
+  limiteRodadas: 10,
+  jogoFinalizado: false,
   taxaCrescimento: 1.02,
   custoFiscalizacao: 2,
   quantidadeInicialPeixesJogador: 100,
   quantidadePeixesLago: 0,
   quantidadeBanca: 0,
+  conteudoChat: '',
   rodadas: []
 }
 
@@ -38,6 +42,7 @@ export const RESULTADO_JOGADA = 'RESULTADO_JOGADA';
 export default function Home() {
   
   const quantidadePescadaRef = useRef<HTMLInputElement>(null);
+  const mensagemRef = useRef<HTMLInputElement>(null);
   const [jogadorAFiscalizar, setJogadorAFiscalizar] = useState<string | null>(null);
 
   const [gameState, setGameState] = useMultiplayerState('gameState', initialState);
@@ -76,8 +81,14 @@ export default function Home() {
 
   useEffect(() => {
     RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
-      console.log(`Player ${caller.getProfile().name} pescou ${data.quantidadePescada} peixes!`);
       caller.setState(JOGADA_PENDENTE, data, true);
+    });
+
+    RPC.register('mensagemEnviada', async (mensagem: any, caller: PlayerState) => {
+      
+      gameState.conteudoChat += `${caller.getProfile().name}: ${mensagem} \n`;
+      setGameState(gameState, true);
+      //caller.setState(JOGADA_PENDENTE, data, true);
     });
 
   },[]);
@@ -122,7 +133,8 @@ export default function Home() {
             fiscalizadoPor: [],
             roubou: false,
             multa: 0,
-            rateio: 0
+            rateioGanhado: 0,
+            rateioPerdido: 0
           }
 
           //recupera peixes no cesto do jogador
@@ -143,24 +155,25 @@ export default function Home() {
           if (jogada.roubou && jogada.fiscalizadoPor?.length > 0){
             console.log('Jogador ' + jogadaPendente.player.getProfile().name + ' foi fiscalizado');
             jogada.multa = 0.1 * peixesPescadosJogador;
-            jogada.rateio = 0.9 * peixesPescadosJogador / jogadoresFiscalizados[jogadaPendente.player.id].length;
+            jogada.rateioPerdido = 0.9 * peixesPescadosJogador / jogadoresFiscalizados[jogadaPendente.player.id].length;
 
             let resultadoJogadaJogador = jogadaPendente.player.getState(RESULTADO_JOGADA) || {};
             
-            resultadoJogadaJogador.mensagem = 'Você foi fiscalizado e perdeu os peixes dessa rodada!';
+            //resultadoJogadaJogador.mensagem = 'Você foi fiscalizado e perdeu os peixes dessa rodada!';
             resultadoJogadaJogador.fiscalizadores = jogada.fiscalizadoPor;
+            resultadoJogadaJogador.roubou = true;
             
             jogadaPendente.player.setState(RESULTADO_JOGADA, resultadoJogadaJogador, true);
 
             //rateia peixes entre os jogadores que fiscalizaram
             jogadoresFiscalizados[jogadaPendente.player.id].forEach((fiscalizador) => {
-              fiscalizador.setState(PEIXES_CESTO, fiscalizador.getState(PEIXES_CESTO) + jogada.rateio, true);
+              fiscalizador.setState(PEIXES_CESTO, fiscalizador.getState(PEIXES_CESTO) + jogada.rateioGanhado, true);
               //Verifica se fiscalizador ja possui um resultado de jogada
               let resultadoJogadaFiscalizador = fiscalizador.getState(RESULTADO_JOGADA) || {};
-              resultadoJogadaFiscalizador.rateio = jogada.rateio;
+              resultadoJogadaFiscalizador.rateioGanhado = jogada.rateioPerdido;
               fiscalizador.setState(RESULTADO_JOGADA, resultadoJogadaFiscalizador, true);
               //inclui o rateio na soma total de peixes nos cestos de todos os jogadores
-              somaPeixesNosCestos += jogada.rateio;
+              somaPeixesNosCestos += jogada.rateioPerdido;
             });
 
             //incrementa a banca com a multa
@@ -175,17 +188,12 @@ export default function Home() {
             
             let resultadoJogadaJogador = jogadaPendente.player.getState(RESULTADO_JOGADA) || {};
             
-            resultadoJogadaJogador.mensagem = 'Você acumulou ' + peixesPescadosJogador + ' peixes nessa rodada!';
+            //resultadoJogadaJogador.mensagem = 'Você acumulou ' + peixesPescadosJogador + ' peixes nessa rodada!';
             resultadoJogadaJogador.fiscalizadores = jogada.fiscalizadoPor;
+            resultadoJogadaJogador.peixesPescadosJogador  = peixesPescadosJogador;
 
             jogadaPendente.player.setState(RESULTADO_JOGADA, resultadoJogadaJogador, true);
 
-            //1 - nao roubou e fiscalizou e nao achou nada
-            //2 - nao roubou e fiscalizou e achou algo
-            //3 - nao roubou e nao foi fiscalizou - v
-            //4 - roubou e foi fiscalizado -- v
-            //5 - roubou e nao foi fiscalizado - v
-            
             //incrementa a banca com o custo da fiscalizacao
             gameState.quantidadeBanca += jogadaPendente.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
             somaBancaNaRodada += jogadaPendente.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
@@ -197,11 +205,13 @@ export default function Home() {
           rodadaAtual.jogadas.push(jogada);
         }); 
         rodadaAtual.quantidadeNosCestos = somaPeixesNosCestos;
-        rodadaAtual.quantidadeLagoFinal = gameState.quantidadePeixesLago - somaPeixesNosCestos;
+        rodadaAtual.quantidadeLagoFinal = gameState.quantidadePeixesLago - somaPeixesNosCestos - somaBancaNaRodada;
         rodadaAtual.saldoBanca = somaBancaNaRodada;
 
+        gameState.quantidadePeixesLago = rodadaAtual.quantidadeLagoFinal;
         //atualiza o game state com a rodada atual
         gameState.rodadas.push(rodadaAtual);
+        gameState.jogoFinalizado = (gameState.rodadas.length == gameState.limiteRodadas) || gameState.quantidadePeixesLago == 0;
         setGameState(gameState, true);
   
       }
@@ -240,6 +250,12 @@ export default function Home() {
     RPC.call('jogadaRealizada', {quantidadePescada: quantidadePescada, jogadorAFiscalizar: jogadorAFiscalizar}, RPC.Mode.HOST);
   }
 
+  function handleEnviarMensagem() {
+    const mensagem = mensagemRef.current?.value;
+    console.dir(mensagemRef.current?.value);
+    RPC.call('mensagemEnviada', mensagem, RPC.Mode.HOST);
+  }
+
   
 
   ///fiscalizar   
@@ -260,16 +276,24 @@ export default function Home() {
     return totalPeixesLago;
   },[gameState, jogadores]);
 
+  const handleResultadoClick = () => {
+    //reset peixes do lago de acordo com quantidade de jogadores
+    if (isHost()){
+      const gameStateInicial = initialState;
+      gameStateInicial.quantidadePeixesLago = jogadores.length * gameStateInicial.quantidadeInicialPeixesJogador;
+      setGameState(gameStateInicial, true);
+    }
+  }
 
   return (  
-    <main>
+    <main className='bg-cyan-700'>
         
         <div id="cabecalho">
           Apolicapse Pesqueiro: {getTotalPeixesLago()}
         </div>
         
         <Cabecalho gameState={gameState} jogador={myPlayer()}></Cabecalho> 
-        <ResultadosJogadas gameState={gameState} jogador={myPlayer()} resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}></ResultadosJogadas>
+        <ResultadosJogadas resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}></ResultadosJogadas>
 
         <label htmlFor="quantidadePescada">Quantidade de peixes pescados: </label>
         <input type="number" ref={quantidadePescadaRef} id="quantidadePescada" name="quantidadePescada" min="0" max="100" />
@@ -281,27 +305,22 @@ export default function Home() {
         </div>
         {error ? <div className='absolute inset-0 bg-red-500' onClick={()=>setError(null)}>{error}</div> : null}
         
-        <button onClick={handlePescar} > Pescar </button>
+        <button onClick={handlePescar} className='bg-cyan-700 rounded-md border-2'> Jogar </button>
         <Tabela rodadas={gameState.rodadas}></Tabela>
-        <div>
-          <h1>Resultado</h1>
-          {myPlayer()?.getState(RESULTADO_JOGADA) ? 
-            <div key={ myPlayer()?.id}>
-              <h2>{ myPlayer()?.getProfile().name}</h2>
-              <p>{myPlayer()?.getState(RESULTADO_JOGADA).mensagem}</p>
-              {myPlayer()?.getState(RESULTADO_JOGADA).fiscalizadores ? 
-                  <p>Fiscalizadores:  
-                    {myPlayer()?.getState(RESULTADO_JOGADA).fiscalizadores.map((fiscalizador: PlayerProfile) => { 
-                      return fiscalizador.name; 
-                    }).join(', ')}
-                  </p> 
-                  : 
-                  null
-              }
-              {myPlayer()?.getState(RESULTADO_JOGADA).rateio ? <p>Rateio: {myPlayer()?.getState(RESULTADO_JOGADA).rateio}</p> : null}
-            </div> 
-            : null}
-        </div>
+
+        {/* Conteudo total  do Chat */}
+        <textarea value={gameState.conteudoChat} className='bg-cyan-700 rounded-md border-2' cols={200} rows={5}></textarea>
+        
+        {/* Nova mensagem  do Chat */}
+        <label htmlFor="mensagem">Mensagem: </label>
+        <input type="text" ref={mensagemRef} id="mensagem" name="mensagem" />
+        
+        
+        <button onClick={handleEnviarMensagem} className='bg-cyan-700 rounded-md border-2'> Enviar </button>
+
+        {gameState.jogoFinalizado ? 
+          <ResultadoFinal jogadores={jogadores} onClick={handleResultadoClick}></ResultadoFinal>
+        : null}
     </main>
   );
 }

@@ -10,5 +10,6 @@ export type Jogada = {
   fiscalizadoPor: PlayerProfile[];
   roubou: boolean;
   multa: number;
-  rateio: number;
+  rateioGanhado: number;
+  rateioPerdido: number;
 };
