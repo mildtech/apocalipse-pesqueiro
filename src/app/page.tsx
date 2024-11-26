@@ -11,6 +11,7 @@ import { GameState } from './types/GameState';
 import Cabecalho from './components/Cabecalho';
 import ResultadosJogadas from './components/ResultadosJogadas';
 import ResultadoFinal from './components/ResultadoFinal';
+import Grafico from './components/Grafico';
 
 
 type Jogador = {
@@ -294,6 +295,11 @@ export default function Home() {
         
         <Cabecalho gameState={gameState} jogador={myPlayer()}></Cabecalho> 
         <ResultadosJogadas resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}></ResultadosJogadas>
+        
+        <div>
+          <h2>Gráfico do Lago</h2>
+          <Grafico rodadas={gameState.rodadas} />
+        </div>
 
         <label htmlFor="quantidadePescada">Quantidade de peixes pescados: </label>
         <input type="number" ref={quantidadePescadaRef} id="quantidadePescada" name="quantidadePescada" min="0" max="100" />
