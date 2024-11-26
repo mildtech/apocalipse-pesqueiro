@@ -2,7 +2,7 @@
  "use client"
 
 import { insertCoin, isHost, myPlayer, onPlayerJoin, PlayerProfile, PlayerState, RPC, useMultiplayerState, usePlayersList, usePlayersState } from 'playroomkit';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Jogador from './components/Jogador';
 import Tabela from './components/Tabela';
 import { Rodada } from './types/Rodada';
@@ -36,6 +36,7 @@ const initialState: GameState = {
 
 export const PEIXES_CESTO = 'PEIXES_CESTO';
 export const JOGADA_PENDENTE = 'JOGADA_PENDENTE';
+export const MENSAGEM_PENDENTE = 'MENSAGEM_PENDENTE';
 export const RESULTADO_JOGADA = 'RESULTADO_JOGADA';
 
 
@@ -46,11 +47,21 @@ export default function Home() {
   const [jogadorAFiscalizar, setJogadorAFiscalizar] = useState<string | null>(null);
 
   const [gameState, setGameState] = useMultiplayerState('gameState', initialState);
-  const [peixesCesto, setPeixesCesto] = useState<number>(0);
+  //const [peixesCesto, setPeixesCesto] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
   const jogadores = usePlayersList(true);
-  const jogadasPendentes = usePlayersState(JOGADA_PENDENTE); 
+  const jogadasPendentes = usePlayersState(JOGADA_PENDENTE);
+  //const mensagensPendentes = usePlayersState(MENSAGEM_PENDENTE);
+  const mensagensPendentes = jogadores
+                                    .filter((jogador) => jogador.getState(MENSAGEM_PENDENTE) != null)
+                                    .map((jogador) => {
+                                          return {
+                                              player: jogador, 
+                                              mensagem: jogador.getState(MENSAGEM_PENDENTE)
+                                            };
+                                    });
+  
 
   useEffect(() => {
     async function setGame() {
@@ -81,22 +92,23 @@ export default function Home() {
 
   useEffect(() => {
     RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
-      caller.setState(JOGADA_PENDENTE, data, true);
+      caller?.setState(JOGADA_PENDENTE, data, true);
     });
 
     RPC.register('mensagemEnviada', async (mensagem: any, caller: PlayerState) => {
-      
-      gameState.conteudoChat += `${caller.getProfile().name}: ${mensagem} \n`;
-      setGameState(gameState, true);
-      //caller.setState(JOGADA_PENDENTE, data, true);
+      console.log('mensagemEnviada: ' + mensagem);
+      caller?.setState(MENSAGEM_PENDENTE, mensagem, true);
     });
 
   },[]);
+  
 
   useEffect(() => {
     //processamento das jogadas pendentes quando todas jogadas foram realizadas
     if (isHost()){
+      console.log('eu sou o host'); 
       const jogadasNaoRealizadas = jogadasPendentes.filter((jogada) => jogada.state == null);
+      const novoGameState = {...gameState};
       if (jogadasNaoRealizadas.length == 0){
         console.log('todas jogadas realizadas');
         const rodadaAtual: Rodada = {
@@ -105,8 +117,12 @@ export default function Home() {
           jogadas: []
         }
 
+        //calcula a quantidade total de peixes pescados por todos os jogadores
         const somaPeixesPescados = jogadasPendentes.reduce((acumulador, jogada) => acumulador + jogada.state.quantidadePescada, 0);
         
+        //recupera os jogadores que fiscalizaram cada jogador
+        //agrupando por jogador fiscalizado
+        //Exemplo: { 'idJogadorFiscalizado': [jogador1, jogador2], 'idJogadorFiscalizado2': [jogador3] }
         const jogadoresFiscalizados = jogadasPendentes.reduce((acc: Record<string, PlayerState[]>, jogada) => {
           const jogadorAFiscalizar = jogada.state.jogadorAFiscalizar;
          
@@ -115,8 +131,10 @@ export default function Home() {
           
           return acc;
         }, {} as Record<string, PlayerState[]>);
-        console.log(`jogadoresFiscalizados`)
-        console.dir(jogadoresFiscalizados)
+        //console.log(`jogadoresFiscalizados`)
+        //console.dir(jogadoresFiscalizados)
+
+        //calcula o limite de peixes possiveis por jogador de acordo com a quantidade de peixes no lago
         const limitePeixesPossiveis = (somaPeixesPescados > gameState.quantidadePeixesLago) ? 
                                         Math.floor(gameState.quantidadePeixesLago / jogadores.length) : 
                                         gameState.quantidadePeixesLago;
@@ -177,7 +195,7 @@ export default function Home() {
             });
 
             //incrementa a banca com a multa
-            gameState.quantidadeBanca += jogada.multa;
+            novoGameState.quantidadeBanca += jogada.multa;
             somaBancaNaRodada += jogada.multa;
             
           } else { 
@@ -195,7 +213,7 @@ export default function Home() {
             jogadaPendente.player.setState(RESULTADO_JOGADA, resultadoJogadaJogador, true);
 
             //incrementa a banca com o custo da fiscalizacao
-            gameState.quantidadeBanca += jogadaPendente.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
+            novoGameState.quantidadeBanca += jogadaPendente.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
             somaBancaNaRodada += jogadaPendente.state.jogadorAFiscalizar ? gameState.custoFiscalizacao : 0;
             somaPeixesNosCestos += peixesPescadosJogador;
           }
@@ -208,16 +226,23 @@ export default function Home() {
         rodadaAtual.quantidadeLagoFinal = gameState.quantidadePeixesLago - somaPeixesNosCestos - somaBancaNaRodada;
         rodadaAtual.saldoBanca = somaBancaNaRodada;
 
-        gameState.quantidadePeixesLago = rodadaAtual.quantidadeLagoFinal;
+        novoGameState.quantidadePeixesLago = rodadaAtual.quantidadeLagoFinal;
         //atualiza o game state com a rodada atual
-        gameState.rodadas.push(rodadaAtual);
-        gameState.jogoFinalizado = (gameState.rodadas.length == gameState.limiteRodadas) || gameState.quantidadePeixesLago == 0;
-        setGameState(gameState, true);
-  
+        novoGameState.rodadas.push(rodadaAtual);
+        novoGameState.jogoFinalizado = (gameState.rodadas.length == gameState.limiteRodadas) || gameState.quantidadePeixesLago == 0;
       }
+
+      //processamento das mensagens pendentes
+      console.log('mensagensPendentes:', mensagensPendentes.length);                      
+      mensagensPendentes.forEach((mensagemPendente) => {
+        novoGameState.conteudoChat += `${mensagemPendente.player.getProfile().name}: ${mensagemPendente.mensagem} \n`;
+        mensagemPendente.player.setState(MENSAGEM_PENDENTE, null, true);
+      });
+      
+      setGameState(novoGameState, true);
     }
 
-  },[jogadasPendentes, jogadores, gameState]);
+  },[gameState, jogadasPendentes, jogadores, mensagensPendentes]);
   
   function handleJogadorClick(id: string) {
     console.log('jogadorAFiscalizar !== nome ' + jogadorAFiscalizar !== id);
@@ -241,7 +266,7 @@ export default function Home() {
       setError('Quantidade de peixes pescados maior que o limite possível por rodada');
       return;
     }
-    const totalPescadoRodada = peixesCesto + quantidadePescada;
+    //const totalPescadoRodada = peixesCesto + quantidadePescada;
     
     //setPeixesCesto(totalPescadoRodada);
     //myPlayer()?.setState(PEIXES_CESTO, totalPescadoRodada, true);
@@ -252,8 +277,9 @@ export default function Home() {
 
   function handleEnviarMensagem() {
     const mensagem = mensagemRef.current?.value;
-    console.dir(mensagemRef.current?.value);
+    //console.dir(mensagemRef.current?.value);
     RPC.call('mensagemEnviada', mensagem, RPC.Mode.HOST);
+    //myPlayer().setState(MENSAGEM_PENDENTE, mensagem, true);
   }
 
   
@@ -309,7 +335,7 @@ export default function Home() {
         <Tabela rodadas={gameState.rodadas}></Tabela>
 
         {/* Conteudo total  do Chat */}
-        <textarea value={gameState.conteudoChat} className='bg-cyan-700 rounded-md border-2' cols={200} rows={5}></textarea>
+        <textarea readOnly value={gameState.conteudoChat} className='bg-cyan-700 rounded-md border-2' cols={200} rows={5}></textarea>
         
         {/* Nova mensagem  do Chat */}
         <label htmlFor="mensagem">Mensagem: </label>

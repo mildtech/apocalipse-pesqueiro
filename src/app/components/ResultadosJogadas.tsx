@@ -17,7 +17,7 @@ type ResultadosJogadasProps = {
 const textoInicial = "Aqui serão exibidos os resultados das jogadas dos jogadores. Cada jogador terá um texto com o resultado da sua jogada, os fiscalizadores e o rateio. O texto será atualizado a cada rodada.";
 export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJogadasProps) {
         //const resultadoJogada = resultadosJogadasProps.jogador?.getState(RESULTADO_JOGADA);
-        console.log(resultadosJogadasProps?.resultadoJogada)
+        //console.log(resultadosJogadasProps?.resultadoJogada)
 //resultadoJogadaJogador.fiscalizadores = jogada.fiscalizadoPor;
           //  resultadoJogadaJogador.peixesPescadosJogador
 
@@ -25,7 +25,8 @@ export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJoga
         if(resultadosJogadasProps?.resultadoJogada?.roubou && resultadosJogadasProps?.resultadoJogada?.fiscalizadores?.length > 0) {
             mensagem = "Você pescou acima do limite e perdeu os peixes desta rodada!"
         } else {
-            const totalPeixesAcumulados = resultadosJogadasProps?.resultadoJogada?.peixesPescadosJogador + resultadosJogadasProps?.resultadoJogada?.rateioGanhado;
+            const rateio = !isNaN(resultadosJogadasProps?.resultadoJogada?.rateioGanhado)? resultadosJogadasProps?.resultadoJogada?.rateioGanhado : 0;
+            const totalPeixesAcumulados = resultadosJogadasProps?.resultadoJogada?.peixesPescadosJogador + rateio;
             mensagem = "Você acumulou " + totalPeixesAcumulados + " peixes nessa rodada!"
         }
         
