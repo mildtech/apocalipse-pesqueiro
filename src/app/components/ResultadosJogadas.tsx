@@ -3,9 +3,10 @@ import { GameState } from '../types/GameState';
 import Jogador from './Jogador';
 import { PlayerProfile, PlayerState } from 'playroomkit';
 import { PEIXES_CESTO, RESULTADO_JOGADA } from '../page';
+import { ResultadoRodada } from '../types/ResultadoRodada';
 
 type ResultadosJogadasProps = {
-    resultadoJogada: any;
+    resultadoJogada: ResultadoRodada;
 };  
  //1 - nao roubou e fiscalizou e nao achou nada
             //2 - nao roubou e fiscalizou e achou algo
@@ -23,11 +24,11 @@ export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJoga
 
         let mensagem = ""
         if(resultadosJogadasProps?.resultadoJogada?.roubou && resultadosJogadasProps?.resultadoJogada?.fiscalizadores?.length > 0) {
-            mensagem = "Você pescou acima do limite e perdeu os peixes desta rodada!"
+            mensagem = "Você pescou acima do limite, foi fiscalizado e perdeu os peixes desta rodada!"
         } else {
             const rateio = !isNaN(resultadosJogadasProps?.resultadoJogada?.rateioGanhado)? resultadosJogadasProps?.resultadoJogada?.rateioGanhado : 0;
             const totalPeixesAcumulados = resultadosJogadasProps?.resultadoJogada?.peixesPescadosJogador + rateio;
-            mensagem = "Você acumulou " + totalPeixesAcumulados + " peixes nessa rodada!"
+            mensagem = "Você acumulou " + totalPeixesAcumulados.toPrecision(2) + " peixes nessa rodada!"
         }
         
         if(resultadosJogadasProps?.resultadoJogada?.fiscalizadores?.length > 0) {
@@ -36,6 +37,7 @@ export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJoga
             }).join(', ')
         }
 
+        mensagem += "\n\nCresceram " + resultadosJogadasProps?.resultadoJogada?.crescimentoLago.toPrecision(2) + " peixes no lago nesta rodada!"
         
         
         const conteudo = (resultadosJogadasProps?.resultadoJogada) ? mensagem : textoInicial

@@ -10,6 +10,6 @@ export type GameState = {
   quantidadeInicialPeixesJogador: number;
   quantidadePeixesLago: number;
   quantidadeBanca: number;
-  conteudoChat: string;
+  conteudoChat: string[];
   rodadas: Rodada[];
 };

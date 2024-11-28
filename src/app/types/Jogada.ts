@@ -12,4 +12,5 @@ export type Jogada = {
   multa: number;
   rateioGanhado: number;
   rateioPerdido: number;
+  //resultadoRodada: Res
 };

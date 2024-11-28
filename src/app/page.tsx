@@ -26,12 +26,12 @@ const initialState: GameState = {
   limitePossivelRodada: 20,
   limiteRodadas: 10,
   jogoFinalizado: false,
-  taxaCrescimento: 1.02,
+  taxaCrescimento: 0.02,
   custoFiscalizacao: 2,
   quantidadeInicialPeixesJogador: 100,
   quantidadePeixesLago: 0,
   quantidadeBanca: 0,
-  conteudoChat: '',
+  conteudoChat: [],
   rodadas: []
 }
 
@@ -92,15 +92,26 @@ export default function Home() {
   },[]);
 
   useEffect(() => {
+    
     RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
       caller?.setState(JOGADA_PENDENTE, data, true);
     });
 
     RPC.register('mensagemEnviada', async (mensagem: any, caller: PlayerState) => {
       console.log('mensagemEnviada: ' + mensagem);
-      caller?.setState(MENSAGEM_PENDENTE, mensagem, true);
+      gameState.conteudoChat.push(`${caller?.getProfile().name}: ${mensagem}`);
+      setGameState(gameState, true);
+      //caller?.setState(MENSAGEM_PENDENTE, `${caller?.getProfile().name}: ${mensagem}`, true);
     });
 
+    return () => {
+      RPC.register('mensagemEnviada', async (mensagem: any, caller: PlayerState) => {
+        //não faça nada para "desregistrar" a função
+      });
+      RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
+        //não faça nada para "desregistrar" a função
+      });
+    };
   },[]);
   
 
@@ -115,7 +126,8 @@ export default function Home() {
         const rodadaAtual: Rodada = {
           numero: gameState.rodadas.length + 1,
           quantidadeLagoInicial: gameState.quantidadePeixesLago,
-          jogadas: []
+          jogadas: [],
+          crescimentoLago: gameState.quantidadePeixesLago * gameState.taxaCrescimento
         }
 
         //calcula a quantidade total de peixes pescados por todos os jogadores
@@ -186,7 +198,13 @@ export default function Home() {
 
             //rateia peixes entre os jogadores que fiscalizaram
             jogadoresFiscalizados[jogadaPendente.player.id].forEach((fiscalizador) => {
-              fiscalizador.setState(PEIXES_CESTO, fiscalizador.getState(PEIXES_CESTO) + jogada.rateioGanhado, true);
+              //recupera peixes no cesto do fiscalizador e incrementa com o rateio perdido pelo fiscalizado
+              const peixesCestoFiscalizador = fiscalizador.getState(PEIXES_CESTO);
+              console.log('peixesCestoFiscalizador: ' + peixesCestoFiscalizador);
+              console.log('rateioGanhado: ' + jogada.rateioPerdido);
+              fiscalizador.setState(PEIXES_CESTO, peixesCestoFiscalizador + jogada.rateioPerdido, true);
+              console.log('peixesCestoFiscalizador + rateio: ' + peixesCestoFiscalizador + jogada.rateioPerdido);
+              
               //Verifica se fiscalizador ja possui um resultado de jogada
               let resultadoJogadaFiscalizador = fiscalizador.getState(RESULTADO_JOGADA) || {};
               resultadoJogadaFiscalizador.rateioGanhado = jogada.rateioPerdido;
@@ -210,6 +228,9 @@ export default function Home() {
             //resultadoJogadaJogador.mensagem = 'Você acumulou ' + peixesPescadosJogador + ' peixes nessa rodada!';
             resultadoJogadaJogador.fiscalizadores = jogada.fiscalizadoPor;
             resultadoJogadaJogador.peixesPescadosJogador  = peixesPescadosJogador;
+            
+            //TODO: agrupar os valores referentes ao resultado da rodada que estao na jogada e colocar no resultado da rodada
+            resultadoJogadaJogador.crescimentoLago = rodadaAtual.crescimentoLago;
 
             jogadaPendente.player.setState(RESULTADO_JOGADA, resultadoJogadaJogador, true);
 
@@ -222,23 +243,33 @@ export default function Home() {
           
           //inclui a jogada na rodada atual
           rodadaAtual.jogadas.push(jogada);
-        }); 
-        rodadaAtual.quantidadeNosCestos = somaPeixesNosCestos;
-        rodadaAtual.quantidadeLagoFinal = gameState.quantidadePeixesLago - somaPeixesNosCestos - somaBancaNaRodada;
-        rodadaAtual.saldoBanca = somaBancaNaRodada;
+        });
 
+        rodadaAtual.quantidadeNosCestos = somaPeixesNosCestos;
+        rodadaAtual.quantidadeLagoFinal = gameState.quantidadePeixesLago 
+                                      - somaPeixesNosCestos 
+                                      - somaBancaNaRodada 
+                                      + rodadaAtual.crescimentoLago;
+
+        rodadaAtual.saldoBanca = somaBancaNaRodada;
+        
         novoGameState.quantidadePeixesLago = rodadaAtual.quantidadeLagoFinal;
+
+        
+        
+       
         //atualiza o game state com a rodada atual
         novoGameState.rodadas.push(rodadaAtual);
         novoGameState.jogoFinalizado = (gameState.rodadas.length == gameState.limiteRodadas) || gameState.quantidadePeixesLago == 0;
       }
 
       //processamento das mensagens pendentes
-      console.log('mensagensPendentes:', mensagensPendentes.length);                      
+      /*console.log('mensagensPendentes:', mensagensPendentes.length);                      
       mensagensPendentes.forEach((mensagemPendente) => {
         novoGameState.conteudoChat += `${mensagemPendente.player.getProfile().name}: ${mensagemPendente.mensagem} \n`;
         mensagemPendente.player.setState(MENSAGEM_PENDENTE, null, true);
-      });
+      });*/
+      
       
       setGameState(novoGameState, true);
     }
@@ -291,7 +322,7 @@ export default function Home() {
   //e caso tenha "roubado" soma a "banca" com sendo um jogador a mais aos que ficalizaram o jogador e divide os peixes  
 
 
-  const getTotalPeixesLago = useCallback(() => {
+  /*const getTotalPeixesLago = useCallback(() => {
     let totalPeixesPescados = 0;
     
     jogadores.forEach(jogador => {
@@ -301,7 +332,7 @@ export default function Home() {
     const totalPeixesLago = (jogadores.length * gameState.quantidadeInicialPeixesJogador) - totalPeixesPescados - gameState.quantidadeBanca;
     gameState.quantidadePeixesLago = totalPeixesLago;
     return totalPeixesLago;
-  },[gameState, jogadores]);
+  },[gameState, jogadores]);*/
 
   const handleResultadoClick = () => {
     //reset peixes do lago de acordo com quantidade de jogadores
@@ -312,19 +343,37 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    if (isHost()){
+      gameState.quantidadePeixesLago = jogadores.length * gameState.quantidadeInicialPeixesJogador;
+      setGameState(gameState, true);
+    }
+  }
+  ,[jogadores.length, gameState.quantidadeInicialPeixesJogador]);
+
+  //transforma o conteudo do chat em string
+  const getConteudoChat = useCallback(() => {
+    let chat = '';
+    console.log('gameState.conteudoChat: ', gameState.conteudoChat.length);
+    gameState.conteudoChat.forEach((mensagem) => {
+      chat += mensagem + '\n';
+    });
+    return chat;
+  },[gameState.conteudoChat]);
+
   return (  
     <main className='bg-cyan-700'>
         
         <div id="cabecalho">
-          Apolicapse Pesqueiro: {getTotalPeixesLago()}
+          Apolicapse Pesqueiro
         </div>
         
-        <Cabecalho gameState={gameState} jogador={myPlayer()}></Cabecalho> 
+        <Cabecalho gameState={gameState} jogador={myPlayer()} ></Cabecalho> 
         <ResultadosJogadas resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}></ResultadosJogadas>
         
         <div>
           <h2>Gráfico do Lago</h2>
-          <Grafico rodadas={gameState.rodadas} />
+          <Grafico gameState={gameState} quantidadeJogadores={jogadores.length} />
         </div>
 
         <label htmlFor="quantidadePescada">Quantidade de peixes pescados: </label>
@@ -341,7 +390,7 @@ export default function Home() {
         <Tabela rodadas={gameState.rodadas}></Tabela>
 
         {/* Conteudo total  do Chat */}
-        <textarea readOnly value={gameState.conteudoChat} className='bg-cyan-700 rounded-md border-2' cols={200} rows={5}></textarea>
+        <textarea readOnly value={getConteudoChat()} className='bg-cyan-700 rounded-md border-2' cols={200} rows={5}></textarea>
         
         {/* Nova mensagem  do Chat */}
         <label htmlFor="mensagem">Mensagem: </label>

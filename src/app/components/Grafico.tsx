@@ -1,26 +1,36 @@
 // components/Grafico.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Rodada } from '../types/Rodada';
+import { GameState } from '../types/GameState';
 
 type GraficoProps = {
-  rodadas: Rodada[];
+  gameState: GameState;
+  quantidadeJogadores: number;
 };
 
-export default function Grafico({ rodadas }: GraficoProps) {
+export default function Grafico({ gameState, quantidadeJogadores }: GraficoProps) {
+
+  const quantidadadeInicial = useMemo(() => {
+    return gameState?.quantidadeInicialPeixesJogador || null;
+  }, []);
+
   // Prepara os dados para o gráfico
-  const data = [];
+  const data = [{
+    rodada: 0,
+    quantidadePeixesLago: gameState?.quantidadeInicialPeixesJogador * quantidadeJogadores || null,
+  }];
 
   // Adiciona dados das rodadas existentes
-  for (let i = 0; i < rodadas.length; i++) {
+  for (let i = 0; i < gameState.rodadas.length; i++) {
     data.push({
       rodada: i + 1,
-      quantidadePeixesLago: rodadas[i].quantidadeLagoFinal,
+      quantidadePeixesLago: Number(gameState.rodadas[i].quantidadeLagoFinal?.toFixed(2)) || null,
     });
   }
 
   // Preenche o restante até a rodada 10 com valores nulos
-  for (let i = rodadas.length; i < 10; i++) {
+  for (let i = gameState.rodadas.length; i < gameState.limiteRodadas; i++) {
     data.push({
       rodada: i + 1,
       quantidadePeixesLago: null,
@@ -32,7 +42,7 @@ export default function Grafico({ rodadas }: GraficoProps) {
   return (
     <LineChart width={600} height={300} data={data}>
       <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="rodada" domain={[1, 10]} />
+      <XAxis dataKey="rodada" domain={[0, gameState?.limiteRodadas]} />
       <YAxis />
       <Tooltip />
       <Legend />

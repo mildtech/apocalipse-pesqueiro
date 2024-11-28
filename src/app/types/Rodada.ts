@@ -5,6 +5,7 @@ export type Rodada = {
   quantidadeLagoInicial: number;
   quantidadeLagoFinal?: number;
   quantidadeNosCestos?: number;
+  crescimentoLago: number;
   saldoBanca?: number;
   jogadas: Jogada[];
 };
