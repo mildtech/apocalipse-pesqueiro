@@ -2,7 +2,6 @@ import React from 'react'
 import { GameState } from '../types/GameState';
 import Jogador from './Jogador';
 import { PlayerProfile, PlayerState } from 'playroomkit';
-import { PEIXES_CESTO, RESULTADO_JOGADA } from '../page';
 import { ResultadoRodada } from '../types/ResultadoRodada';
 
 type ResultadosJogadasProps = {

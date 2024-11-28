@@ -2,7 +2,7 @@ import React from 'react'
 import { GameState } from '../types/GameState';
 import Jogador from './Jogador';
 import { PlayerState } from 'playroomkit';
-import { PEIXES_CESTO } from '../page';
+import { PEIXES_CESTO } from '../types/Constants';
 
 type CabecalhoProps = {
     gameState: GameState;

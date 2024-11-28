@@ -1,7 +1,7 @@
 import React from 'react'
 import { Rodada } from '../types/Rodada'
 import { PlayerState } from 'playroomkit';
-import { PEIXES_CESTO } from '../page';
+import { PEIXES_CESTO } from '../types/Constants';
 
 type ResultadoFinalProps = {
     jogadores: PlayerState[] | undefined;

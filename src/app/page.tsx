@@ -12,14 +12,13 @@ import Cabecalho from './components/Cabecalho';
 import ResultadosJogadas from './components/ResultadosJogadas';
 import ResultadoFinal from './components/ResultadoFinal';
 import Grafico from './components/Grafico';
+import { JOGADA_PENDENTE, MENSAGEM_PENDENTE, PEIXES_CESTO, RESULTADO_JOGADA } from './types/Constants';
 
 
 type Jogador = {
   nome: string;
   quantidadeTotalPescada: number;
 }
-
-
 
 const initialState: GameState = {
   limiteSustentavel: 11,
@@ -34,12 +33,6 @@ const initialState: GameState = {
   conteudoChat: [],
   rodadas: []
 }
-
-export const PEIXES_CESTO = 'PEIXES_CESTO';
-export const JOGADA_PENDENTE = 'JOGADA_PENDENTE';
-export const MENSAGEM_PENDENTE = 'MENSAGEM_PENDENTE';
-export const RESULTADO_JOGADA = 'RESULTADO_JOGADA';
-
 
 export default function Home() {
   
