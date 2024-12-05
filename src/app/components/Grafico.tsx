@@ -11,10 +11,6 @@ type GraficoProps = {
 
 export default function Grafico({ gameState, quantidadeJogadores }: GraficoProps) {
 
-  const quantidadadeInicial = useMemo(() => {
-    return gameState?.quantidadeInicialPeixesJogador || null;
-  }, []);
-
   // Prepara os dados para o gráfico
   const data = [{
     rodada: 0,
