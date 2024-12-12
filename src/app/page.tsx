@@ -44,6 +44,8 @@ export default function Home() {
   //const [peixesCesto, setPeixesCesto] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
+  const [quantidadePescada, setQuantidadePescada] = useState(0);
+
   const jogadores = usePlayersList(true);
   const jogadasPendentes = usePlayersState(JOGADA_PENDENTE);
   //const mensagensPendentes = usePlayersState(MENSAGEM_PENDENTE);
@@ -370,7 +372,18 @@ export default function Home() {
         </div>
 
         <label htmlFor="quantidadePescada">Quantidade de peixes pescados: </label>
-        <input type="number" ref={quantidadePescadaRef} id="quantidadePescada" name="quantidadePescada" min="0" max="100" />
+        <input
+          type="range"
+          ref={quantidadePescadaRef}
+          id="quantidadePescada"
+          name="quantidadePescada"
+          min="0"
+          max="20"
+          value={quantidadePescada}
+          onChange={() => setQuantidadePescada(Number(quantidadePescadaRef.current?.value))}
+        />
+        <span>{quantidadePescada}</span>
+
         
         <div id="demaisJogadores">
           {jogadores.map(jogador => {
@@ -388,7 +401,6 @@ export default function Home() {
         {/* Nova mensagem  do Chat */}
         <label htmlFor="mensagem">Mensagem: </label>
         <input type="text" ref={mensagemRef} id="mensagem" name="mensagem" />
-        
         
         <button onClick={handleEnviarMensagem} className='bg-cyan-700 rounded-md border-2'> Enviar </button>
 

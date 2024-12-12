@@ -31,3 +31,9 @@ body {
     text-wrap: balance;
   }
 }
+
+.graph-container {
+  width: 100%;
+  max-width: 400px; /* Adjust the max-width as needed */
+  margin: 0 auto;
+}
