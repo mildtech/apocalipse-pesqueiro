@@ -33,7 +33,7 @@ export default function Grafico({ gameState, quantidadeJogadores }: GraficoProps
     });
   }
 
-  console.log("Dados do gráfico:", data); // Verifica os dados sendo passados para o gráfico
+  //console.log("Dados do gráfico:", data); // Verifica os dados sendo passados para o gráfico
 
   return (
     <LineChart width={600} height={300} data={data}>

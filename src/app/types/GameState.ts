@@ -13,3 +13,7 @@ export type GameState = {
   conteudoChat: string[];
   rodadas: Rodada[];
 };
+
+export type GameConfig = {
+  limiteSustentavel: number;
+};
