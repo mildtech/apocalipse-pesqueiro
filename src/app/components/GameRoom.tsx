@@ -260,7 +260,7 @@ export default function GameRoom() {
 
         //atualiza o game state com a rodada atual
         novoGameState.rodadas.push(rodadaAtual);
-        novoGameState.jogoFinalizado = (gameState.rodadas.length == gameState.limiteRodadas) || gameState.quantidadePeixesLago < 1;
+        novoGameState.jogoFinalizado = (rodadaAtual.numero == gameState.limiteRodadas) || rodadaAtual.quantidadeLagoFinal < 1;
       }
 
       //processamento das mensagens pendentes
