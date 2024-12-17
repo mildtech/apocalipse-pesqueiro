@@ -396,24 +396,34 @@ export default function GameRoom() {
         onChange={() => setQuantidadePescada(Number(quantidadePescadaRef.current?.value))}
       />
       <span>{quantidadePescada}</span>
+      
+      
+      <div style={{ marginTop: '1rem' }}>
+        <h2>Seleção de Jogador a Fiscalizar: </h2>
+      </div>
       <div id="demaisJogadores">
-        {jogadores.map(jogador => {
-          return <Jogador key={jogador.id} id={jogador.id} nome={jogador.getProfile().name} selected={jogador.id === jogadorAFiscalizar} onClick={handleJogadorClick} />
+        {jogadores.filter(jogador => jogador.id !== myPlayer()?.id).map(jogador => {
+          return (
+            <Jogador
+              key={jogador.id}
+              id={jogador.id}
+              nome={jogador.getProfile().name}
+              selected={jogador.id === jogadorAFiscalizar}
+              onClick={handleJogadorClick}
+            />
+          );
         })}
       </div>
       {error ? <div className='absolute inset-0 bg-red-500' onClick={() => setError(null)}>{error}</div> : null}
-      <br />
-      <button onClick={handlePescar} className='bg-cyan-700 rounded-md border-2'> Jogar </button>
 
       <br />
+      <textarea readOnly value={getConteudoChat()} className='bg-cyan-700 rounded-md border-2 text-box' rows={5}></textarea>      <br />
       {/* Conteudo total  do Chat */}
-      <textarea readOnly value={getConteudoChat()} className='bg-cyan-700 rounded-md border-2' cols={150} rows={5}></textarea>
       <br />
       {/* Nova mensagem  do Chat */}
       <label htmlFor="mensagem">Mensagem: </label>
-      <input type="text" ref={mensagemRef} id="mensagem" name="mensagem" />
-
-
+      <input type="text" ref={mensagemRef} id="mensagem" name="mensagem" className="text-box" />
+      
       <button onClick={handleEnviarMensagem} className='bg-cyan-700 rounded-md border-2'> Enviar </button>
 
       <Tabela rodadas={gameState.rodadas}></Tabela>

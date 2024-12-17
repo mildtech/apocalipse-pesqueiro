@@ -38,10 +38,10 @@ export default function Grafico({ gameState, quantidadeJogadores }: GraficoProps
   return (
     <LineChart width={600} height={300} data={data}>
       <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="rodada" domain={[0, gameState?.limiteRodadas]} />
-      <YAxis />
+      <XAxis dataKey="rodada" domain={[0, gameState?.limiteRodadas]} tick={{ fill: 'black' }} />
+      <YAxis tick={{ fill: 'black' }} />
       <Tooltip />
-      <Legend />
+      <Legend wrapperStyle={{ color: 'black' }} />
       <Line type="monotone" dataKey="quantidadePeixesLago" stroke="#8884d8" />
     </LineChart>
   );
