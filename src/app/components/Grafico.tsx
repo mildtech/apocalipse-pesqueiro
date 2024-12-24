@@ -1,6 +1,6 @@
 // components/Grafico.tsx
 import React, { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Rodada } from '../types/Rodada';
 import { GameState } from '../types/GameState';
 
@@ -36,13 +36,19 @@ export default function Grafico({ gameState, quantidadeJogadores }: GraficoProps
   //console.log("Dados do gráfico:", data); // Verifica os dados sendo passados para o gráfico
 
   return (
-    <LineChart width={600} height={300} data={data}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="rodada" domain={[0, gameState?.limiteRodadas]} tick={{ fill: 'black' }} />
-      <YAxis tick={{ fill: 'black' }} />
-      <Tooltip />
-      <Legend wrapperStyle={{ color: 'black' }} />
-      <Line type="monotone" dataKey="quantidadePeixesLago" stroke="#8884d8" />
-    </LineChart>
+    <div className="w-full max-w-4xl mx-auto p-4">
+      <div className="w-full aspect-[2/1] min-h-[200px] max-h-[200px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="rodada" domain={[0, gameState?.limiteRodadas]} tick={{ fill: 'black' }} />
+            <YAxis tick={{ fill: 'black' }} />
+            <Tooltip />
+            <Legend wrapperStyle={{ color: 'black' }} />
+            <Line type="monotone" dataKey="quantidadePeixesLago" stroke="#8884d8" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div >
   );
 }

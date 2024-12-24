@@ -371,69 +371,101 @@ export default function GameRoom() {
     return chat;
   }, [gameState.conteudoChat]);
 
-  return (
-    <main className='bg-cyan-700'>
+  return myPlayer()?.id && (
+    <main className="bg-cyan-700 min-h-screen p-4 flex flex-col items-center justify-start">
 
-      <div id="cabecalho">
+      <div id="cabecalho" className="text-center mb-4 text-2xl font-bold">
         Apolicapse Pesqueiro
       </div>
 
-      <Cabecalho gameState={gameState} jogador={myPlayer()} ></Cabecalho>
-      <ResultadosJogadas resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}></ResultadosJogadas>
+      <Cabecalho gameState={gameState} jogador={myPlayer()}></Cabecalho>
+      <ResultadosJogadas
+        resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}
+      ></ResultadosJogadas>
 
-      <div>
-        <h2>Gráfico do Lago</h2>
+      <div className="w-full max-w-xl mb-4">
+        <h2 className="text-lg font-semibold mb-2">Gráfico do Lago</h2>
         <Grafico gameState={gameState} quantidadeJogadores={jogadores.length} />
       </div>
 
-      <label htmlFor="quantidadePescada">Quantidade de peixes pescados: </label>
-      <input
-        type="range"
-        ref={quantidadePescadaRef}
-        id="quantidadePescada"
-        name="quantidadePescada"
-        min="0"
-        max="20"
-        value={quantidadePescada}
-        onChange={() => setQuantidadePescada(Number(quantidadePescadaRef.current?.value))}
-      />
-      <span>{quantidadePescada}</span>
-
-
-      <div style={{ marginTop: '1rem' }}>
-        <h2>Seleção de Jogador a Fiscalizar: </h2>
+      <div className="w-full max-w-xl mb-4">
+        <label htmlFor="quantidadePescada" className="block mb-1">
+          Quantidade de peixes pescados:
+        </label>
+        <input
+          className="w-full"
+          type="range"
+          ref={quantidadePescadaRef}
+          id="quantidadePescada"
+          name="quantidadePescada"
+          min="0"
+          max="20"
+          value={quantidadePescada}
+          onChange={() => setQuantidadePescada(Number(quantidadePescadaRef.current?.value))}
+        />
+        <span className="ml-2">{quantidadePescada}</span>
       </div>
-      <div id="demaisJogadores">
-        {jogadores.filter(jogador => jogador.id !== myPlayer()?.id).map(jogador => {
-          return (
+
+      <div className="w-full max-w-xl mb-4">
+        <h2 className="text-lg font-semibold mb-2">Seleção de Jogador a Fiscalizar:</h2>
+        <div id="demaisJogadores" className="flex flex-wrap gap-2">
+          {jogadores.filter(j => j.id !== myPlayer()?.id).map(j => (
             <Jogador
-              key={jogador.id}
-              id={jogador.id}
-              nome={jogador.getProfile().name}
-              selected={jogador.id === jogadorAFiscalizar}
+              key={j.id}
+              id={j.id}
+              nome={j.getProfile().name}
+              selected={j.id === jogadorAFiscalizar}
               onClick={handleJogadorClick}
             />
-          );
-        })}
+          ))}
+        </div>
       </div>
-      {error ? <div className='absolute inset-0 bg-red-500' onClick={() => setError(null)}>{error}</div> : null}
 
-      <br />
-      <button onClick={handlePescar} className='bg-cyan-700 rounded-md border-2'> Jogar </button>
-      <br />
-      <textarea readOnly value={getConteudoChat()} className='bg-cyan-700 rounded-md border-2' cols={150} rows={5}></textarea>      <br />
-      {/* Conteudo total  do Chat */}
-      <br />
-      {/* Nova mensagem  do Chat */}
-      <label htmlFor="mensagem">Mensagem: </label>
-      <input type="text" ref={mensagemRef} id="mensagem" name="mensagem" />
+      {error ? (
+        <div className="absolute inset-0 bg-red-500 flex items-center justify-center text-white"
+          onClick={() => setError(null)}
+        >
+          {error}
+        </div>
+      ) : null}
 
-      <button onClick={handleEnviarMensagem} className='bg-cyan-700 rounded-md border-2'> Enviar </button>
+      <button
+        onClick={handlePescar}
+        className="bg-cyan-800 text-white rounded-md border-2 px-4 py-2 mb-4"
+      >
+        Jogar
+      </button>
 
-      <Tabela rodadas={gameState.rodadas}></Tabela>
-      {gameState.jogoFinalizado ?
+      <textarea
+        readOnly
+        value={getConteudoChat()}
+        className="bg-cyan-700 rounded-md border-2 w-full max-w-xl h-32 resize-none mb-4"
+      ></textarea>
+
+      <div className="w-full max-w-xl mb-4">
+        <label htmlFor="mensagem" className="block mb-1">Mensagem:</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            ref={mensagemRef}
+            id="mensagem"
+            name="mensagem"
+            className="flex-1 p-2 border rounded-md"
+          />
+          <button
+            onClick={handleEnviarMensagem}
+            className="bg-cyan-800 text-white rounded-md border-2 px-4 py-2"
+          >
+            Enviar
+          </button>
+        </div>
+      </div>
+
+      <Tabela rodadas={gameState.rodadas} />
+
+      {gameState.jogoFinalizado ? (
         <ResultadoFinal jogadores={jogadores} onClick={handleResultadoClick}></ResultadoFinal>
-        : null}
+      ) : null}
     </main>
   );
 }
