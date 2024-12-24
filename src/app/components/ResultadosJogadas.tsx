@@ -36,13 +36,13 @@ export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJoga
         }).join(', ')
     }
 
-    mensagem += "\n\nCresceram " + resultadosJogadasProps?.resultadoJogada?.crescimentoLago.toPrecision(2) + " peixes no lago nesta rodada!"
+    mensagem += "\n\nCresceram " + resultadosJogadasProps?.resultadoJogada?.crescimentoLago?.toPrecision(2) + " peixes no lago nesta rodada!"
 
 
     const conteudo = (resultadosJogadasProps?.resultadoJogada) ? mensagem : textoInicial
     return (
-        <div>
-            <textarea className='bg-cyan-700 rounded-md border-2' readOnly={true} cols={150} rows={5} value={conteudo}></textarea>
+        <div >
+            <textarea className='bg-cyan-700 rounded-md border-2 ' readOnly={true} cols={150} rows={5} value={conteudo}></textarea>
 
         </div>
     )

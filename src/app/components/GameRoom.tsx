@@ -86,6 +86,7 @@ export default function GameRoom() {
   useEffect(() => {
 
     RPC.register('jogadaRealizada', async (data: any, caller: PlayerState) => {
+      caller?.setState(RESULTADO_JOGADA, null, true);
       caller?.setState(JOGADA_PENDENTE, data, true);
     });
 
@@ -208,6 +209,7 @@ export default function GameRoom() {
               //Verifica se fiscalizador ja possui um resultado de jogada
               let resultadoJogadaFiscalizador = fiscalizador.getState(RESULTADO_JOGADA) || {};
               resultadoJogadaFiscalizador.rateioGanhado = jogada.rateioPerdido;
+              resultadoJogadaFiscalizador.crescimentoLago = rodadaAtual.crescimentoLago;
               fiscalizador.setState(RESULTADO_JOGADA, resultadoJogadaFiscalizador, true);
               //inclui o rateio na soma total de peixes nos cestos de todos os jogadores
               somaPeixesNosCestos += jogada.rateioPerdido;
@@ -396,8 +398,8 @@ export default function GameRoom() {
         onChange={() => setQuantidadePescada(Number(quantidadePescadaRef.current?.value))}
       />
       <span>{quantidadePescada}</span>
-      
-      
+
+
       <div style={{ marginTop: '1rem' }}>
         <h2>Seleção de Jogador a Fiscalizar: </h2>
       </div>
@@ -417,13 +419,15 @@ export default function GameRoom() {
       {error ? <div className='absolute inset-0 bg-red-500' onClick={() => setError(null)}>{error}</div> : null}
 
       <br />
-      <textarea readOnly value={getConteudoChat()} className='bg-cyan-700 rounded-md border-2 text-box' rows={5}></textarea>      <br />
+      <button onClick={handlePescar} className='bg-cyan-700 rounded-md border-2'> Jogar </button>
+      <br />
+      <textarea readOnly value={getConteudoChat()} className='bg-cyan-700 rounded-md border-2' cols={150} rows={5}></textarea>      <br />
       {/* Conteudo total  do Chat */}
       <br />
       {/* Nova mensagem  do Chat */}
       <label htmlFor="mensagem">Mensagem: </label>
-      <input type="text" ref={mensagemRef} id="mensagem" name="mensagem" className="text-box" />
-      
+      <input type="text" ref={mensagemRef} id="mensagem" name="mensagem" />
+
       <button onClick={handleEnviarMensagem} className='bg-cyan-700 rounded-md border-2'> Enviar </button>
 
       <Tabela rodadas={gameState.rodadas}></Tabela>
