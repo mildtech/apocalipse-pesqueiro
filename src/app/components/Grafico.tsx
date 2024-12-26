@@ -36,7 +36,7 @@ export default function Grafico({ gameState, quantidadeJogadores }: GraficoProps
   //console.log("Dados do gráfico:", data); // Verifica os dados sendo passados para o gráfico
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4">
+    <div className="w-full mx-auto p-4">
       <div className="w-full aspect-[2/1] min-h-[200px] max-h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>

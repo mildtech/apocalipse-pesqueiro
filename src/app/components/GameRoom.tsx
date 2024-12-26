@@ -340,9 +340,20 @@ export default function GameRoom() {
     return totalPeixesLago;
   },[gameState, jogadores]);*/
 
-  const handleResultadoClick = () => {
+  const handleReiniciarClick = () => {
+    if (isHost()) {
+      reiniciarJogo();
+    }
+  }
+
+  const reiniciarJogo = () => {
     //reset peixes do lago de acordo com quantidade de jogadores
     if (isHost()) {
+      //reset Peixes Cesto
+      jogadores.forEach(jogador => {
+        jogador.setState(PEIXES_CESTO, 0, true);
+        jogador.setState(RESULTADO_JOGADA, null, true);
+      });
       const gameStateInicial = initialState;
       gameStateInicial.quantidadePeixesLago = jogadores.length * gameStateInicial.quantidadeInicialPeixesJogador;
       setGameState(gameStateInicial, true);
@@ -371,24 +382,45 @@ export default function GameRoom() {
     return chat;
   }, [gameState.conteudoChat]);
 
-  return myPlayer()?.id && (
-    <main className="bg-cyan-700 min-h-screen p-4 flex flex-col items-center justify-start">
+  const handleEditarParametros = (value: Partial<GameState>) => {
+    if (isHost()) {
+      const novoGameState = {
+        ...gameState,
+        ...value
+      }
+      setGameState(novoGameState, true);
+    }
+  }
 
-      <div id="cabecalho" className="text-center mb-4 text-2xl font-bold">
+  return myPlayer()?.id ? (
+    <main className="bg-cyan-700 min-h-screen w-full p-4 flex flex-col items-center justify-start">
+
+      <div id="cabecalho" className="text-center mb-4 text-2xl font-bold w-full">
         Apolicapse Pesqueiro
+        {isHost() ? (
+          <button
+            onClick={handleReiniciarClick}
+            className="bg-cyan-800 text-white rounded-full p-2 hover:bg-cyan-900 transition-colors"
+            title="Reiniciar Jogo"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+          </button>
+        ) : null}
       </div>
 
-      <Cabecalho gameState={gameState} jogador={myPlayer()}></Cabecalho>
+      <Cabecalho gameState={gameState} jogador={myPlayer()} onChange={handleEditarParametros} isEditable={isHost() && gameState.rodadas.length === 0}></Cabecalho>
       <ResultadosJogadas
         resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}
       ></ResultadosJogadas>
 
-      <div className="w-full max-w-xl mb-4">
+      <div className="w-full mb-4">
         <h2 className="text-lg font-semibold mb-2">Gráfico do Lago</h2>
         <Grafico gameState={gameState} quantidadeJogadores={jogadores.length} />
       </div>
 
-      <div className="w-full max-w-xl mb-4">
+      <div className="w-full mb-4">
         <label htmlFor="quantidadePescada" className="block mb-1">
           Quantidade de peixes pescados:
         </label>
@@ -399,14 +431,14 @@ export default function GameRoom() {
           id="quantidadePescada"
           name="quantidadePescada"
           min="0"
-          max="20"
+          max={gameState.limitePossivelRodada}
           value={quantidadePescada}
           onChange={() => setQuantidadePescada(Number(quantidadePescadaRef.current?.value))}
         />
         <span className="ml-2">{quantidadePescada}</span>
       </div>
 
-      <div className="w-full max-w-xl mb-4">
+      <div className="w-full mb-4">
         <h2 className="text-lg font-semibold mb-2">Seleção de Jogador a Fiscalizar:</h2>
         <div id="demaisJogadores" className="flex flex-wrap gap-2">
           {jogadores.filter(j => j.id !== myPlayer()?.id).map(j => (
@@ -421,17 +453,33 @@ export default function GameRoom() {
         </div>
       </div>
 
-      {error ? (
-        <div className="absolute inset-0 bg-red-500 flex items-center justify-center text-white"
-          onClick={() => setError(null)}
-        >
-          {error}
-        </div>
-      ) : null}
+      {
+        error ? (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative">
+              <button
+                onClick={() => setError(null)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div className="flex items-center mb-4">
+                <svg className="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-900">Erro</h3>
+              </div>
+              <p className="text-gray-600">{error}</p>
+            </div>
+          </div>
+        ) : null
+      }
 
       <button
         onClick={handlePescar}
-        className="bg-cyan-800 text-white rounded-md border-2 px-4 py-2 mb-4"
+        className="bg-cyan-800 text-white rounded-md border-2 px-4 py-2 mb-4 w-full"
       >
         Jogar
       </button>
@@ -439,10 +487,10 @@ export default function GameRoom() {
       <textarea
         readOnly
         value={getConteudoChat()}
-        className="bg-cyan-700 rounded-md border-2 w-full max-w-xl h-32 resize-none mb-4"
+        className="bg-cyan-700 rounded-md border-2 w-full h-32 resize-none mb-4"
       ></textarea>
 
-      <div className="w-full max-w-xl mb-4">
+      <div className="w-full mb-4">
         <label htmlFor="mensagem" className="block mb-1">Mensagem:</label>
         <div className="flex items-center gap-2">
           <input
@@ -461,13 +509,22 @@ export default function GameRoom() {
         </div>
       </div>
 
-      <Tabela rodadas={gameState.rodadas} />
+      {/*  <Tabela rodadas={gameState.rodadas} /> */}
 
-      {gameState.jogoFinalizado ? (
-        <ResultadoFinal jogadores={jogadores} onClick={handleResultadoClick}></ResultadoFinal>
-      ) : null}
-    </main>
-  );
+      {
+        gameState.jogoFinalizado ? (
+          <ResultadoFinal jogadores={jogadores} onClick={handleReiniciarClick}></ResultadoFinal>
+        ) : null
+      }
+    </main >
+  ) : (
+    <div className="min-h-screen bg-cyan-700 flex items-center justify-center">
+      <div className="text-white text-2xl animate-pulse flex flex-col items-center">
+        <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+        Carregando...
+      </div>
+    </div>)
+
 }
 
 

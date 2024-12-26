@@ -41,9 +41,12 @@ export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJoga
 
     const conteudo = (resultadosJogadasProps?.resultadoJogada) ? mensagem : textoInicial
     return (
-        <div >
-            <textarea className="bg-cyan-700 rounded-md border-2 w-full max-w-xl h-32 resize-none mb-4" readOnly={true} cols={150} rows={5} value={conteudo}></textarea>
-
+        <div className="w-full h-full flex items-center justify-center">
+            <textarea
+                className="bg-cyan-700 rounded-md border-2 w-full h-32 resize-none mb-4 p-2"
+                readOnly={true}
+                value={conteudo}
+            ></textarea>
         </div>
     )
 
