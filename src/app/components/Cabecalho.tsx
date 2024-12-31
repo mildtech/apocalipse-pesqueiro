@@ -22,7 +22,7 @@ export default function Cabecalho(cabecalhoProps: CabecalhoProps) {
     return (
         <div className="relative w-full h-full">
             <div className="w-full">
-                <Jogador key={cabecalhoProps.jogador?.id} id={cabecalhoProps.jogador?.id} nome={cabecalhoProps.jogador?.getProfile().name} quantidadeTotalPescada={cabecalhoProps.jogador?.getState(PEIXES_CESTO)} />
+                <Jogador key={cabecalhoProps.jogador?.id} id={cabecalhoProps.jogador?.id} nome={cabecalhoProps.jogador?.getProfile().name} photo={cabecalhoProps.jogador?.getProfile().photo} quantidadeTotalPescada={cabecalhoProps.jogador?.getState(PEIXES_CESTO)} />
             </div>
             <div className="grid gap-2 grid-cols-1 grid-rows-3 w-full">
                 <div className="w-full">
@@ -33,7 +33,7 @@ export default function Cabecalho(cabecalhoProps: CabecalhoProps) {
                 </div>
             </div>
             <details className="absolute top-0 right-0 p-4 border rounded bg-white shadow-lg w-auto" open={cabecalhoProps.gameState.rodadas.length === 0}>
-                <summary className="font-bold cursor-pointer">Parâmetros do Jogo</summary>
+                <summary className="font-bold cursor-pointer"><span className="inline-block align-middle">⚙️</span></summary>
                 <div className="grid gap-2 grid-cols-2 grid-rows-3 mt-2">
                     <div>
                         Limite Sustentável: {cabecalhoProps.isEditable ? (

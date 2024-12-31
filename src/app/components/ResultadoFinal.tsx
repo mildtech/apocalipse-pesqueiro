@@ -1,14 +1,16 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Rodada } from '../types/Rodada'
 import { PlayerState } from 'playroomkit';
 import { PEIXES_CESTO } from '../types/Constants';
 
 type ResultadoFinalProps = {
   jogadores: PlayerState[] | undefined;
+  isAguardando: boolean;
   onClick?: () => void;
 };
 
 export default function ResultadoFinal(resultadoFinalProps: ResultadoFinalProps) {
+
   const handleResultadoClick = () => {
     if (resultadoFinalProps.onClick) {
       resultadoFinalProps.onClick();
@@ -48,18 +50,18 @@ export default function ResultadoFinal(resultadoFinalProps: ResultadoFinalProps)
               >
                 <span className="font-medium">{jogador.getProfile().name}</span>
                 <span className="text-blue-600 font-bold">
-                  {jogador.getState(PEIXES_CESTO)} peixes
+                  {jogador.getState(PEIXES_CESTO)?.toFixed(1)} peixes
                 </span>
               </li>
             ))}
           </ol>
 
-          {/* Restart button */}
+          {/* Restart button className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors"*/}
           <button
             onClick={handleResultadoClick}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors"
+            className={(resultadoFinalProps.isAguardando ? `bg-cyan-600 text-gray` : `bg-cyan-800 text-white`) + " rounded-md border-2 px-4 py-2 mb-4 w-full"}
           >
-            Reiniciar
+            {resultadoFinalProps.isAguardando ? "Aguardando demais jogadores..." : "Reiniciar"}
           </button>
         </div>
       </div>

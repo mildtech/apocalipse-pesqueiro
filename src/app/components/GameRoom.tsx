@@ -38,6 +38,7 @@ export default function GameRoom() {
   const mensagemRef = useRef<HTMLInputElement>(null);
   const [jogadorAFiscalizar, setJogadorAFiscalizar] = useState<string | null>(null);
   const [quantidadePescada, setQuantidadePescada] = useState<number>(0);
+  const [isAguardando, setIsAguardando] = useState(false);
 
   const [gameState, setGameState] = useMultiplayerState('gameState', initialState);
   //const [peixesCesto, setPeixesCesto] = useState<number>(0);
@@ -193,6 +194,8 @@ export default function GameRoom() {
 
             //resultadoJogadaJogador.mensagem = 'Você foi fiscalizado e perdeu os peixes dessa rodada!';
             resultadoJogadaJogador.fiscalizadores = jogada.fiscalizadoPor;
+            resultadoJogadaJogador.crescimentoLago = rodadaAtual.crescimentoLago;
+
             resultadoJogadaJogador.roubou = true;
 
             jogadaPendente.player.setState(RESULTADO_JOGADA, resultadoJogadaJogador, true);
@@ -209,7 +212,6 @@ export default function GameRoom() {
               //Verifica se fiscalizador ja possui um resultado de jogada
               let resultadoJogadaFiscalizador = fiscalizador.getState(RESULTADO_JOGADA) || {};
               resultadoJogadaFiscalizador.rateioGanhado = jogada.rateioPerdido;
-              resultadoJogadaFiscalizador.crescimentoLago = rodadaAtual.crescimentoLago;
               fiscalizador.setState(RESULTADO_JOGADA, resultadoJogadaFiscalizador, true);
               //inclui o rateio na soma total de peixes nos cestos de todos os jogadores
               somaPeixesNosCestos += jogada.rateioPerdido;
@@ -294,6 +296,7 @@ export default function GameRoom() {
 
   function handlePescar() {
     const quantidadePescada = Number(quantidadePescadaRef.current?.value);
+
     console.log('Pescar - quantidadePescada: ', quantidadePescada);
     if (quantidadePescada > gameState.limitePossivelRodada) {
       setError('Quantidade de peixes pescados maior que o limite possível por rodada');
@@ -310,7 +313,14 @@ export default function GameRoom() {
 
     // Trigger the RPC on the host only
     RPC.call('jogadaRealizada', { quantidadePescada: quantidadePescada, jogadorAFiscalizar: jogadorAFiscalizar }, RPC.Mode.HOST);
+    setIsAguardando(true);
   }
+
+  useEffect(() => {
+
+    setIsAguardando(false);
+
+  }, [gameState.rodadas.length]);
 
   function handleEnviarMensagem() {
     const mensagem = mensagemRef.current?.value;
@@ -341,6 +351,7 @@ export default function GameRoom() {
   },[gameState, jogadores]);*/
 
   const handleReiniciarClick = () => {
+    setIsAguardando(true);
     if (isHost()) {
       reiniciarJogo();
     }
@@ -445,6 +456,7 @@ export default function GameRoom() {
             <Jogador
               key={j.id}
               id={j.id}
+              photo={j.getProfile().photo}
               nome={j.getProfile().name}
               selected={j.id === jogadorAFiscalizar}
               onClick={handleJogadorClick}
@@ -479,9 +491,10 @@ export default function GameRoom() {
 
       <button
         onClick={handlePescar}
-        className="bg-cyan-800 text-white rounded-md border-2 px-4 py-2 mb-4 w-full"
+        className={(isAguardando ? `bg-cyan-600 text-gray` : `bg-cyan-800 text-white`) + " rounded-md border-2 px-4 py-2 mb-4 w-full"}
+        disabled={isAguardando}
       >
-        Jogar
+        {isAguardando ? "Aguardando demais jogadores..." : "Jogar"}
       </button>
 
       <textarea
@@ -513,7 +526,7 @@ export default function GameRoom() {
 
       {
         gameState.jogoFinalizado ? (
-          <ResultadoFinal jogadores={jogadores} onClick={handleReiniciarClick}></ResultadoFinal>
+          <ResultadoFinal jogadores={jogadores} onClick={handleReiniciarClick} isAguardando={isAguardando}></ResultadoFinal>
         ) : null
       }
     </main >
