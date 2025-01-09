@@ -427,7 +427,7 @@ export default function GameRoom() {
       ></ResultadosJogadas>
 
       <div className="w-full mb-4">
-        <h2 className="text-lg font-semibold mb-2">Gráfico do Lago</h2>
+        <h2 className="text-lg font-semibold mb-2">Quantidade de Peixes</h2>
         <Grafico gameState={gameState} quantidadeJogadores={jogadores.length} />
       </div>
 
