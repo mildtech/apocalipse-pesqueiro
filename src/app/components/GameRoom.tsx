@@ -12,6 +12,9 @@ import ResultadoFinal from './ResultadoFinal';
 import Grafico from './Grafico';
 import { JOGADA_PENDENTE, MENSAGEM_PENDENTE, PEIXES_CESTO, RESULTADO_JOGADA } from '../types/Constants';
 import { distribuirPeixesProporcional } from '../service/Distribuicao';
+import { setConfig } from 'next/config';
+import { Config } from 'tailwindcss';
+import Configuracoes from './Configuracoes';
 
 type Jogador = {
   nome: string;
@@ -39,6 +42,10 @@ export default function GameRoom() {
   const [jogadorAFiscalizar, setJogadorAFiscalizar] = useState<string | null>(null);
   const [quantidadePescada, setQuantidadePescada] = useState<number>(0);
   const [isAguardando, setIsAguardando] = useState(false);
+  const [isGraficoVisible, setIsGraficoVisible] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(true);
+  const [isConfigVisible, setIsConfigVisible] = useState(false);
+  const [isResultadoVisible, setIsResultadoVisible] = useState(true);
 
   const [gameState, setGameState] = useMultiplayerState('gameState', initialState);
   //const [peixesCesto, setPeixesCesto] = useState<number>(0);
@@ -47,6 +54,7 @@ export default function GameRoom() {
   const jogadores = usePlayersList(true);
   const jogadasPendentes = usePlayersState(JOGADA_PENDENTE);
   //const mensagensPendentes = usePlayersState(MENSAGEM_PENDENTE);
+
   const mensagensPendentes = jogadores
     .filter((jogador) => jogador.getState(MENSAGEM_PENDENTE) != null)
     .map((jogador) => {
@@ -403,6 +411,22 @@ export default function GameRoom() {
     }
   }
 
+  function handleChatClick(): void {
+    setIsChatVisible(!isChatVisible);
+  }
+
+  function handleGraficoClick(): void {
+    setIsGraficoVisible(!isGraficoVisible);
+  }
+
+  function handleConfigClick(): void {
+    setIsConfigVisible(!isConfigVisible);
+  }
+
+  function handleResultadoClick(): void {
+    setIsResultadoVisible(!isResultadoVisible);
+  }
+
   return myPlayer()?.id ? (
     <main className="bg-cyan-700 min-h-screen w-full p-4 flex flex-col items-center justify-start">
 
@@ -421,15 +445,55 @@ export default function GameRoom() {
         ) : null}
       </div>
 
-      <Cabecalho gameState={gameState} jogador={myPlayer()} onChange={handleEditarParametros} isEditable={isHost() && gameState.rodadas.length === 0}></Cabecalho>
-      <ResultadosJogadas
+      <Cabecalho gameState={gameState} jogador={myPlayer()} ></Cabecalho>
+      <div className="w-full mb-4 flex justify-center space-x-2">
+        <button
+          onClick={handleResultadoClick}
+          className="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200
+          hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50
+          bg-cyan-800 text-white"
+        >
+          Resultado das Jogadas
+        </button>
+        <button
+          onClick={handleGraficoClick}
+          className="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 
+          hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50
+          bg-cyan-800 text-white"
+        >
+          Gráfico
+        </button>
+        <button
+          onClick={handleChatClick}
+          className="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200
+          hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50
+          bg-cyan-800 text-white"
+        >
+          Chat
+        </button>
+        <button
+          onClick={handleConfigClick}
+          className="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200
+          hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50
+          bg-cyan-800 text-white"
+        >
+          <span className="inline-block align-middle">⚙️</span> Configurações
+        </button>
+
+      </div>
+
+      {isConfigVisible &&
+        (<Configuracoes isEditable={isHost() && gameState.rodadas.length === 0} isConfigVisible={isConfigVisible} onChange={handleEditarParametros} jogador={myPlayer()} gameState={gameState} />)
+      }
+      <ResultadosJogadas visible={isResultadoVisible}
         resultadoJogada={myPlayer()?.getState(RESULTADO_JOGADA)}
       ></ResultadosJogadas>
 
-      <div className="w-full mb-4">
+      {isGraficoVisible && (<div className="w-full mb-4" >
         <h2 className="text-lg font-semibold mb-2">Quantidade de Peixes</h2>
         <Grafico gameState={gameState} quantidadeJogadores={jogadores.length} />
-      </div>
+      </div>)
+      }
 
       <div className="w-full mb-4">
         <label htmlFor="quantidadePescada" className="block mb-1">
@@ -497,30 +561,33 @@ export default function GameRoom() {
         {isAguardando ? "Aguardando demais jogadores..." : "Jogar"}
       </button>
 
-      <textarea
-        readOnly
-        value={getConteudoChat()}
-        className="bg-cyan-700 rounded-md border-2 w-full h-32 resize-none mb-4"
-      ></textarea>
+      {isChatVisible && (
+        <>
+          <textarea
+            readOnly
+            value={getConteudoChat()}
+            className="bg-cyan-700 rounded-md border-2 w-full h-32 resize-none mb-4"
+          ></textarea>
 
-      <div className="w-full mb-4">
-        <label htmlFor="mensagem" className="block mb-1">Mensagem:</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            ref={mensagemRef}
-            id="mensagem"
-            name="mensagem"
-            className="flex-1 p-2 border rounded-md"
-          />
-          <button
-            onClick={handleEnviarMensagem}
-            className="bg-cyan-800 text-white rounded-md border-2 px-4 py-2"
-          >
-            Enviar
-          </button>
-        </div>
-      </div>
+          <div className="w-full mb-4">
+            <label htmlFor="mensagem" className="block mb-1">Mensagem:</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                ref={mensagemRef}
+                id="mensagem"
+                name="mensagem"
+                className="flex-1 p-2 border rounded-md"
+              />
+              <button
+                onClick={handleEnviarMensagem}
+                className="bg-cyan-800 text-white rounded-md border-2 px-4 py-2"
+              >
+                Enviar
+              </button>
+            </div>
+          </div>
+        </>)}
 
       {/*  <Tabela rodadas={gameState.rodadas} /> */}
 

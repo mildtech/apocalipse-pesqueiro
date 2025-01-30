@@ -6,6 +6,7 @@ import { ResultadoRodada } from '../types/ResultadoRodada';
 
 type ResultadosJogadasProps = {
     resultadoJogada: ResultadoRodada;
+    visible: boolean;
 };
 //1 - nao roubou e fiscalizou e nao achou nada
 //2 - nao roubou e fiscalizou e achou algo
@@ -40,7 +41,7 @@ export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJoga
 
 
     const conteudo = (resultadosJogadasProps?.resultadoJogada) ? mensagem : textoInicial
-    return (
+    return resultadosJogadasProps.visible && (
         <div className="w-full h-full flex items-center justify-center">
             <textarea
                 className="bg-cyan-700 rounded-md border-2 w-full h-32 resize-none mb-4 p-2"
