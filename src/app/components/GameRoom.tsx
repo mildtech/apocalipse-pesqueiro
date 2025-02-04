@@ -10,7 +10,7 @@ import Cabecalho from './Cabecalho';
 import ResultadosJogadas from './ResultadosJogadas';
 import ResultadoFinal from './ResultadoFinal';
 import Grafico from './Grafico';
-import { JOGADA_PENDENTE, MENSAGEM_PENDENTE, PEIXES_CESTO, RESULTADO_JOGADA } from '../types/Constants';
+import { JOGADA_PENDENTE, MENSAGEM_PENDENTE, PEIXES_CESTO, RESULTADO_JOGADA, ULTIMA_MENSAGEM } from '../types/Constants';
 import { distribuirPeixesProporcional } from '../service/Distribuicao';
 import { setConfig } from 'next/config';
 import { Config } from 'tailwindcss';
@@ -101,7 +101,10 @@ export default function GameRoom() {
 
     RPC.register('mensagemEnviada', async (mensagem: any, caller: PlayerState) => {
       console.log('mensagemEnviada: ' + mensagem);
+
       gameState.conteudoChat.push(`${caller?.getProfile().name}: ${mensagem}`);
+
+      caller.setState(ULTIMA_MENSAGEM, mensagem);
       setGameState(gameState, true);
       //caller?.setState(MENSAGEM_PENDENTE, `${caller?.getProfile().name}: ${mensagem}`, true);
     });
@@ -334,6 +337,7 @@ export default function GameRoom() {
     const mensagem = mensagemRef.current?.value;
     //console.dir(mensagemRef.current?.value);
     RPC.call('mensagemEnviada', mensagem, RPC.Mode.HOST);
+    mensagemRef.current!.value = '';
     //myPlayer().setState(MENSAGEM_PENDENTE, mensagem, true);
   }
 
@@ -490,7 +494,6 @@ export default function GameRoom() {
       ></ResultadosJogadas>
 
       {isGraficoVisible && (<div className="w-full mb-4" >
-        <h2 className="text-lg font-semibold mb-2">Quantidade de Peixes</h2>
         <Grafico gameState={gameState} quantidadeJogadores={jogadores.length} />
       </div>)
       }
@@ -524,6 +527,7 @@ export default function GameRoom() {
               nome={j.getProfile().name}
               selected={j.id === jogadorAFiscalizar}
               onClick={handleJogadorClick}
+              message={j.getState(ULTIMA_MENSAGEM)}
             />
           ))}
         </div>

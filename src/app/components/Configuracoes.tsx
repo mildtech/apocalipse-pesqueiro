@@ -63,6 +63,13 @@ export default function Configuracoes(configuracoesProps: ConfiguracoesProps) {
                         />
                     ) : configuracoesProps.gameState.taxaCrescimento}
                 </div>
+                <div>
+                    Quantidade da Banca: {configuracoesProps.gameState.quantidadeBanca}
+                </div>
+                <div>
+                    Crescimento acumulado: {configuracoesProps.gameState.rodadas.reduce((acc, rodada) => acc + rodada.crescimentoLago, 0).toPrecision(2)}
+                </div>
+
             </div>
         </div>)
 
