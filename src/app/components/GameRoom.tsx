@@ -15,6 +15,8 @@ import { distribuirPeixesProporcional } from '../service/Distribuicao';
 import { setConfig } from 'next/config';
 import { Config } from 'tailwindcss';
 import Configuracoes from './Configuracoes';
+import Instrucoes from './Instrucoes';
+import Image from 'next/image';
 
 type Jogador = {
   nome: string;
@@ -46,6 +48,7 @@ export default function GameRoom() {
   const [isChatVisible, setIsChatVisible] = useState(true);
   const [isConfigVisible, setIsConfigVisible] = useState(false);
   const [isResultadoVisible, setIsResultadoVisible] = useState(true);
+  const [isInstrucoesVisible, setIsInstrucoesVisible] = useState(true);
 
   const [gameState, setGameState] = useMultiplayerState('gameState', initialState);
   //const [peixesCesto, setPeixesCesto] = useState<number>(0);
@@ -431,8 +434,25 @@ export default function GameRoom() {
     setIsResultadoVisible(!isResultadoVisible);
   }
 
+  function handleInstrucoesClick(): void {
+    setIsInstrucoesVisible(!isInstrucoesVisible);
+  }
+
   return myPlayer()?.id ? (
-    <main className="bg-cyan-700 min-h-screen w-full p-4 flex flex-col items-center justify-start">
+    <main className="min-h-screen w-full p-4 flex flex-col items-center justify-start">
+      <div className="fixed inset-0 -z-10">
+        <Image
+          src="/FundoLago.jpg"
+          alt="Fundo Lago"
+          fill
+          style={{ objectFit: 'cover' }}
+          priority
+        />
+      </div>
+
+      {isInstrucoesVisible &&
+        (<Instrucoes onClick={handleInstrucoesClick} />)
+      }
 
       <div id="cabecalho" className="text-center mb-4 text-2xl font-bold w-full">
         Apolicapse Pesqueiro
@@ -597,7 +617,7 @@ export default function GameRoom() {
 
       {
         gameState.jogoFinalizado ? (
-          <ResultadoFinal jogadores={jogadores} onClick={handleReiniciarClick} isAguardando={isAguardando}></ResultadoFinal>
+          <ResultadoFinal jogadores={jogadores} quantidadeBanca={gameState.quantidadeBanca} onClick={handleReiniciarClick} isAguardando={isAguardando}></ResultadoFinal>
         ) : null
       }
     </main >

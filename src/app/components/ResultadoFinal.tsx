@@ -5,6 +5,7 @@ import { PEIXES_CESTO } from '../types/Constants';
 
 type ResultadoFinalProps = {
   jogadores: PlayerState[] | undefined;
+  quantidadeBanca: number;
   isAguardando: boolean;
   onClick?: () => void;
 };
@@ -55,6 +56,8 @@ export default function ResultadoFinal(resultadoFinalProps: ResultadoFinalProps)
               </li>
             ))}
           </ol>
+          <h3>Resultado da Banca</h3>
+          <p>Quantidade final da Banca: {resultadoFinalProps.quantidadeBanca}</p>
 
           {/* Restart button className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors"*/}
           <button

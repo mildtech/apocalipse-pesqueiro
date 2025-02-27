@@ -15,7 +15,7 @@ type ResultadosJogadasProps = {
 //5 - roubou e nao foi fiscalizado - v
 
 
-const textoInicial = "Cada jogador entrou com 100 peixes no lago comunitário. Você escolhe quanto pescar e se quer fiscalizar alguém na cada rodada. Caso você pesque mais que o limite sustentável e seja fiscalizado por outro jogador, perderá seus peixes da rodada. Se pescar até a quantidade sustentável, pode pagar e fiscalizar um jogador - e pegar parte de seus peixes caso ele tenha pescado mais que o sustentável.";
+const textoInicial = "Selecione a quantidade a pescar, se vai fiscalizar algum jogador e clique em 'JOGAR' para iniciar a rodada!";
 export default function ResultadosJogadas(resultadosJogadasProps: ResultadosJogadasProps) {
     //const resultadoJogada = resultadosJogadasProps.jogador?.getState(RESULTADO_JOGADA);
     //console.log(resultadosJogadasProps?.resultadoJogada)
